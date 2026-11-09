@@ -477,6 +477,180 @@ public sealed class IdentityIntegrationTests(ApiFixture fixture) : IClassFixture
     }
 
     [Fact]
+    public async Task TenantSettingsArePermissionControlledValidatedAuditedAndTenantScoped()
+    {
+        var scenario = await SeedAuthorizationScenarioAsync(fixture.Services);
+        using var client = fixture.CreateClient();
+        var token = await GetCsrfTokenAsync(client);
+        using var login = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/auth/login",
+            new { email = scenario.UserEmail, password = scenario.Password },
+            token);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        client.DefaultRequestHeaders.Add("X-Tenant-ID", scenario.TenantId.ToString());
+
+        using var anonymousClient = fixture.CreateClient();
+        using var anonymousSettings = await anonymousClient.GetAsync("/api/v1/tenant/settings");
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymousSettings.StatusCode);
+
+        using var deniedList = await client.GetAsync("/api/v1/tenant/settings");
+        Assert.Equal(HttpStatusCode.Forbidden, deniedList.StatusCode);
+
+        Guid otherTenantId;
+        await using (var scope = fixture.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+            var managerRole = await database.TenantRoles.SingleAsync(
+                role => role.TenantId == scenario.TenantId && role.Name == "Role Manager");
+            var readerRole = new TenantRole
+            {
+                Id = Guid.NewGuid(),
+                TenantId = scenario.TenantId,
+                Name = "Settings Reader",
+                CreatedAtUtc = DateTimeOffset.UtcNow,
+            };
+            database.TenantRoles.Add(readerRole);
+            database.MembershipRoles.Add(new MembershipRole
+            {
+                TenantId = scenario.TenantId,
+                MembershipId = scenario.MembershipId,
+                RoleId = readerRole.Id,
+                AssignedAtUtc = DateTimeOffset.UtcNow,
+            });
+            database.TenantRolePermissions.Add(new TenantRolePermission
+            {
+                TenantId = scenario.TenantId,
+                RoleId = readerRole.Id,
+                PermissionCode = PermissionCodes.SettingsRead,
+            });
+
+            otherTenantId = await database.Memberships
+                .Where(membership => membership.Id == scenario.OtherTenantMembershipId)
+                .Select(membership => membership.TenantId)
+                .SingleAsync();
+            database.TenantSettings.Add(new TenantSetting
+            {
+                TenantId = otherTenantId,
+                Key = "ui.theme",
+                Value = "external-value",
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+                UpdatedByUserId = Guid.NewGuid(),
+            });
+            await database.SaveChangesAsync();
+
+            token = await GetCsrfTokenAsync(client);
+            using var readOnlyWrite = await PostJsonWithCsrfAsync(
+                client,
+                "/api/v1/tenant/settings",
+                new { key = "ui.theme", value = "light" },
+                token);
+            Assert.Equal(HttpStatusCode.Forbidden, readOnlyWrite.StatusCode);
+
+            database.TenantRolePermissions.Add(new TenantRolePermission
+            {
+                TenantId = scenario.TenantId,
+                RoleId = managerRole.Id,
+                PermissionCode = PermissionCodes.SettingsManage,
+            });
+            await database.SaveChangesAsync();
+        }
+
+        using var emptyList = await client.GetAsync("/api/v1/tenant/settings");
+        Assert.Equal(HttpStatusCode.OK, emptyList.StatusCode);
+        using (var body = JsonDocument.Parse(await emptyList.Content.ReadAsStringAsync()))
+        {
+            Assert.Empty(body.RootElement.EnumerateArray());
+        }
+
+        token = await GetCsrfTokenAsync(client);
+        using var created = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/settings",
+            new { key = "ui.theme", value = "light" },
+            token);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Equal("/api/v1/tenant/settings/ui.theme", created.Headers.Location?.OriginalString);
+
+        token = await GetCsrfTokenAsync(client);
+        using var duplicate = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/settings",
+            new { key = "UI.Theme", value = "dark" },
+            token);
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var sensitiveKey = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/settings",
+            new { key = "auth.api-token", value = "not-a-secret" },
+            token);
+        Assert.Equal(HttpStatusCode.BadRequest, sensitiveKey.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var oversizedValue = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/settings",
+            new { key = "ui.description", value = new string('x', 2001) },
+            token);
+        Assert.Equal(HttpStatusCode.BadRequest, oversizedValue.StatusCode);
+
+        using var getSetting = await client.GetAsync("/api/v1/tenant/settings/ui.theme");
+        Assert.Equal(HttpStatusCode.OK, getSetting.StatusCode);
+        using (var body = JsonDocument.Parse(await getSetting.Content.ReadAsStringAsync()))
+        {
+            Assert.Equal("light", body.RootElement.GetProperty("value").GetString());
+        }
+
+        token = await GetCsrfTokenAsync(client);
+        using var updated = await PutJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/settings/ui.theme",
+            new { value = "dark" },
+            token);
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+
+        using var list = await client.GetAsync("/api/v1/tenant/settings");
+        using (var body = JsonDocument.Parse(await list.Content.ReadAsStringAsync()))
+        {
+            var setting = Assert.Single(body.RootElement.EnumerateArray());
+            Assert.Equal("dark", setting.GetProperty("value").GetString());
+        }
+
+        token = await GetCsrfTokenAsync(client);
+        using var deleted = await DeleteEmptyWithCsrfAsync(client, "/api/v1/tenant/settings/ui.theme", token);
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        using var missing = await client.GetAsync("/api/v1/tenant/settings/ui.theme");
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+
+        await using (var scope = fixture.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+            var otherTenantSetting = await database.TenantSettings.SingleAsync(
+                setting => setting.TenantId == otherTenantId && setting.Key == "ui.theme");
+            Assert.Equal("external-value", otherTenantSetting.Value);
+
+            var expectedActions = new[]
+            {
+                (Response: created, Action: "tenant.setting.created"),
+                (Response: updated, Action: "tenant.setting.updated"),
+                (Response: deleted, Action: "tenant.setting.deleted"),
+            };
+            foreach (var (response, expectedAction) in expectedActions)
+            {
+                var correlationId = Assert.Single(response.Headers.GetValues("X-Correlation-ID"));
+                var auditRecord = await database.AuditRecords.SingleAsync(record => record.CorrelationId == correlationId);
+                Assert.Equal(scenario.TenantId, auditRecord.TenantId);
+                Assert.Equal(expectedAction, auditRecord.Action);
+                Assert.DoesNotContain("light", auditRecord.MetadataJson ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("dark", auditRecord.MetadataJson ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("external-value", auditRecord.MetadataJson ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+    }
+
+    [Fact]
     public async Task TenantAuditIsAppendOnlyPermissionControlledPaginatedAndTenantScoped()
     {
         var scenario = await SeedAuthorizationScenarioAsync(fixture.Services);

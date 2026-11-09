@@ -9,6 +9,7 @@ using Platform.Api;
 using Platform.Api.Auditing;
 using Platform.Api.Data;
 using Platform.Api.Identity;
+using Platform.Api.Settings;
 using Platform.Modules.Identity.Application;
 using Platform.Modules.Identity.Domain;
 using Platform.Modules.Tenancy.Application;
@@ -108,6 +109,12 @@ public static class ApiApplication
             options.AddPolicy(TenantPermissionPolicies.AuditRead, policy => policy
                 .RequireAuthenticatedUser()
                 .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.AuditRead)));
+            options.AddPolicy(TenantPermissionPolicies.SettingsRead, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.SettingsRead)));
+            options.AddPolicy(TenantPermissionPolicies.SettingsManage, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.SettingsManage)));
         });
         builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
         builder.Services.AddAntiforgery(options =>
@@ -136,6 +143,7 @@ public static class ApiApplication
         builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<IAuditRecordService, AuditRecordService>();
+        builder.Services.AddScoped<ITenantSettingService, TenantSettingService>();
         builder.Services.AddScoped<ITenantMembershipRepository, EfTenantMembershipRepository>();
         builder.Services.AddScoped<ITenantRoleRepository, EfTenantRoleRepository>();
         builder.Services.AddScoped<ITenantMemberManagementService, TenantMemberManagementService>();
@@ -285,6 +293,7 @@ public static class ApiApplication
         app.MapTenantAuthorizationEndpoints();
         app.MapTenantMemberManagementEndpoints();
         app.MapAuditEndpoints();
+        app.MapTenantSettingEndpoints();
 
         return app;
     }

@@ -35,6 +35,54 @@ Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
 
 ###
 
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/settings
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/settings/ui.theme
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+POST {{Platform.Api_HostAddress}}/api/v1/tenant/settings
+Accept: application/json
+Content-Type: application/json
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+{
+  "key": "ui.theme",
+  "value": "dark"
+}
+
+###
+
+PUT {{Platform.Api_HostAddress}}/api/v1/tenant/settings/ui.theme
+Accept: application/json
+Content-Type: application/json
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+{
+  "value": "light"
+}
+
+###
+
+DELETE {{Platform.Api_HostAddress}}/api/v1/tenant/settings/ui.theme
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
 POST {{Platform.Api_HostAddress}}/api/v1/tenant/memberships
 Accept: application/json
 Content-Type: application/json

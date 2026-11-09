@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-09
 
-Project Status: Tenant audit logging complete; awaiting review
+Project Status: PLAT-010 tenant settings module complete; awaiting user review
 
-Overall Completion: 56% (9 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 7 of 14)
+Overall Completion: 63% (10 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 8 of 14)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -45,7 +45,8 @@ Status: Complete
 - [x] Complete PLAT-008 authenticated admin shell and member management; verify member lifecycle and role assignment.
 - [x] After user review, begin PLAT-009 audit records for security and administration actions.
 - [x] Complete PLAT-009 with migration, security/admin event coverage, permission-controlled audit reads and verification.
-- [ ] After user review, begin PLAT-010 tenant settings module.
+- [x] After user review, begin PLAT-010 tenant settings module.
+- [x] Complete PLAT-010 with validated non-secret settings, tenant uniqueness, authorization and verification.
 
 ## Progress Update Format
 
@@ -121,3 +122,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-009 Done.
 - Verification: all 14 unit tests and 16 SQL Server/API integration tests passed, including authorization denial, pagination, cross-tenant isolation, secret omission, and event coverage. `dotnet format --verify-no-changes` passed; Release build succeeded with 0 warnings/errors. Applied migration `20261109161919_AddTenantAuditRecords` to isolated LocalDB `CommonWebPlatformRun_20261109` without removing the demo data. Live health, Swagger UI and OpenAPI returned 200; unauthenticated audit access returned 401.
 - Next action: user review of PLAT-009. Do not start PLAT-010 until explicitly approved.
+
+### 2026-11-09 — PLAT-010 tenant settings module
+
+- Outcome: added tenant-scoped settings CRUD at `/api/v1/tenant/settings`, case-normalized keys, strict key/value validation, a composite tenant/key primary key, and separate `settings.read` and `settings.manage` authorization. Settings are plain-text, non-secret values only; every create/update/delete is audited without recording the setting value. Existing roles with `roles.manage` receive the new permissions through the migration. Added `.http` examples and security documentation.
+- Task IDs: PLAT-010 Done.
+- Verification: all 14 unit tests and 17 SQL Server/API integration tests passed; the integration test covers migration application, denied and allowed permissions, validation, duplicate keys, CRUD, audit value omission and tenant isolation. `dotnet format --verify-no-changes` passed; Release solution build/test completed with 0 warnings/errors. OpenAPI and Swagger tests include the settings collection and key routes. Integration tests apply the migration to isolated databases; the default `CommonWebPlatform` database was not changed.
+- Next action: user review of PLAT-010. Do not start PLAT-011 until explicitly approved.

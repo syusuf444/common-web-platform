@@ -16,6 +16,8 @@ public sealed class PermissionConfiguration : IEntityTypeConfiguration<Permissio
             new Permission { Code = PermissionCodes.MembersRead, Description = "Read tenant members." },
             new Permission { Code = PermissionCodes.MembersManage, Description = "Manage tenant members." },
             new Permission { Code = PermissionCodes.RolesManage, Description = "Manage tenant roles and assignments." },
-            new Permission { Code = PermissionCodes.AuditRead, Description = "Read tenant security and administration audit records." });
+            new Permission { Code = PermissionCodes.AuditRead, Description = "Read tenant security and administration audit records." },
+            new Permission { Code = PermissionCodes.SettingsRead, Description = "Read non-secret tenant settings." },
+            new Permission { Code = PermissionCodes.SettingsManage, Description = "Create, update, and delete non-secret tenant settings." });
     }
 }

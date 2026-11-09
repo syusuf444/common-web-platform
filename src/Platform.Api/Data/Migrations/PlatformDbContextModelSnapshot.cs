@@ -134,6 +134,31 @@ namespace Platform.Api.Data.Migrations
                     b.ToTable("AuditRecords", "platform");
                 });
 
+            modelBuilder.Entity("Platform.Api.Data.TenantSetting", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("TenantId", "Key");
+
+                    b.ToTable("TenantSettings", "platform");
+                });
+
             modelBuilder.Entity("Platform.Modules.Identity.Domain.MembershipRole", b =>
                 {
                     b.Property<Guid>("TenantId")
@@ -190,6 +215,16 @@ namespace Platform.Api.Data.Migrations
                         {
                             Code = "audit.read",
                             Description = "Read tenant security and administration audit records."
+                        },
+                        new
+                        {
+                            Code = "settings.read",
+                            Description = "Read non-secret tenant settings."
+                        },
+                        new
+                        {
+                            Code = "settings.manage",
+                            Description = "Create, update, and delete non-secret tenant settings."
                         });
                 });
 
@@ -404,6 +439,15 @@ namespace Platform.Api.Data.Migrations
                     b.HasOne("Platform.Modules.Identity.Domain.PlatformUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Platform.Api.Data.TenantSetting", b =>
+                {
+                    b.HasOne("Platform.Modules.Tenancy.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

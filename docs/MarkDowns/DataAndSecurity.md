@@ -15,7 +15,7 @@ All primary keys use UUIDs unless a later measured need calls for another scheme
 | MembershipRole | TenantId, MembershipId, RoleId | Composite foreign keys enforce role and membership belong to the same tenant |
 | RefreshSession | Id, UserId, TokenHash, ExpiresAtUtc, RevokedAtUtc | Store token hashes, rotate and revoke; tenant association as needed |
 | AuditRecord | Id, TenantId?, ActorUserId?, Action, ResourceType, ResourceId, OccurredAtUtc, CorrelationId, Metadata | Append-oriented, minimize sensitive metadata |
-| TenantSetting | Id, TenantId, Key, Value, UpdatedAtUtc | Non-secret values only; unique `(TenantId, Key)` |
+| TenantSetting | TenantId, Key, Value, UpdatedAtUtc, UpdatedByUserId | Non-secret values only; unique `(TenantId, Key)` |
 
 Future module tables must declare tenant scope and include tenant ID in relevant uniqueness constraints, foreign keys where supported, and indexes. Avoid storing passwords directly; delegate credential hashing and security controls to a well-supported identity implementation.
 
@@ -36,6 +36,7 @@ Platform-operator data and tenant data have distinct authorization paths. Cross-
 - Evaluate tenant permissions from the active membership's assigned tenant roles on each request; role and membership IDs are always scoped by the verified tenant.
 - Append security and administration events to the audit log with actor, tenant, action, target, UTC time and request correlation ID; audit metadata is limited to non-secret operational details.
 - Require the dedicated `audit.read` tenant permission for the paginated audit endpoint; the migration grants it to existing roles that already have `roles.manage`. Audit records have no API update or delete operation.
+- Manage ordinary, non-secret tenant settings under `/api/v1/tenant/settings`; `settings.read` and `settings.manage` are separate permissions, initially granted to existing roles with `roles.manage`. Values are plain text and limited to 2000 characters. Secret-like keys are rejected; do not store credentials, tokens, API keys, connection strings or cryptographic keys here. Setting values are never written to audit metadata.
 - Make retryable writes idempotent where duplicate execution would cause harm.
 
 ## Security Baseline
