@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/TestResults/
+.dotnet-cli/
+.vs/
+.idea/
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+*.user
+*.suo

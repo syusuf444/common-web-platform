@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\Tenancy\Platform.Modules.Tenancy.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.7" />
+  </ItemGroup>
+
+</Project>

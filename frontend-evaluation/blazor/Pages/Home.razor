@@ -1,0 +1,283 @@
+@page "/"
+@using System.ComponentModel.DataAnnotations
+@using System.Net
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.WebAssembly.Http
+@using Microsoft.AspNetCore.Components.Forms
+@inject HttpClient Http
+
+<PageTitle>Identity &amp; access | Common Web Platform</PageTitle>
+
+<div class="shell">
+    <aside class="rail" aria-label="Application navigation">
+        <a class="brand" href="#home" aria-label="Common Web Platform home">
+            <span class="brand-mark" aria-hidden="true">C</span>
+            <span>Common Web<br />Platform</span>
+        </a>
+        <div class="rail-label">WORKSPACE</div>
+        <a class="nav-item active" href="#access" aria-current="page"><span aria-hidden="true">◫</span> Access</a>
+        <div class="rail-footer"><span class="status-dot"></span> Local API<br /><small>Development</small></div>
+    </aside>
+
+    <main id="home" class="main-area">
+        <header class="topbar">
+            <div><span class="eyebrow">PLATFORM CONSOLE</span><span class="divider">/</span><span>Identity &amp; access</span></div>
+            @if (CurrentUser is not null)
+            {
+                <button class="quiet-button" type="button" @onclick="LogoutAsync" disabled="@Busy">Sign out</button>
+            }
+        </header>
+
+        <section id="access" class="content">
+            <div class="heading-row">
+                <div><p class="eyebrow accent">ACCOUNT</p><h1>@(CurrentUser is null ? "Welcome back" : "Your workspace access")</h1><p class="subtitle">A small shell connected to the Common Web Platform API.</p></div>
+                <span class="api-pill"><span class="status-dot"></span> API connected</span>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Error))
+            {
+                <div class="notice error" role="alert">@Error</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <div class="notice success" role="status" aria-live="polite">@Message</div>
+            }
+
+            @if (CurrentUser is null)
+            {
+                <section class="card auth-card" aria-labelledby="auth-title">
+                    <div class="card-heading"><div><h2 id="auth-title">@(Registering ? "Create local account" : "Sign in")</h2><p>Use your development account to continue.</p></div><span class="icon-tile" aria-hidden="true">↗</span></div>
+                    <EditForm Model="Credentials" OnValidSubmit="AuthenticateAsync">
+                        <DataAnnotationsValidator />
+                        @if (Registering)
+                        {
+                            <div class="field"><label for="display-name">Display name</label><InputText id="display-name" @bind-Value="Credentials.DisplayName" autocomplete="name" maxlength="120" /></div>
+                        }
+                        <div class="field"><label for="email">Email address</label><InputText id="email" type="email" @bind-Value="Credentials.Email" autocomplete="email" /></div>
+                        <div class="field"><div class="label-row"><label for="password">Password</label>@if (!Registering){<span>12+ characters</span>}</div><InputText id="password" type="password" @bind-Value="Credentials.Password" autocomplete="@(Registering ? "new-password" : "current-password")" /></div>
+                        <ValidationSummary />
+                        <button class="primary-button full-width" type="submit" disabled="@Busy">@(Busy ? "Please wait…" : Registering ? "Create account and sign in" : "Sign in") <span aria-hidden="true">→</span></button>
+                    </EditForm>
+                    <p class="switch-mode">@(Registering ? "Already have an account?" : "New to this local workspace?") <button type="button" @onclick="ToggleMode">@(Registering ? "Sign in" : "Create an account")</button></p>
+                    <p class="helper-note">Local registration is available only while the API runs in Development.</p>
+                </section>
+            }
+            else
+            {
+                <div class="dashboard-grid">
+                    <section class="card profile-card" aria-labelledby="profile-title">
+                        <div class="card-heading"><div><h2 id="profile-title">Signed-in account</h2><p>Authenticated by the platform session cookie.</p></div><span class="avatar" aria-hidden="true">@CurrentUser.DisplayName[..1].ToUpperInvariant()</span></div>
+                        <dl class="profile-list"><div><dt>Name</dt><dd>@CurrentUser.DisplayName</dd></div><div><dt>Email</dt><dd>@CurrentUser.Email</dd></div><div><dt>User ID</dt><dd class="mono">@CurrentUser.Id</dd></div></dl>
+                    </section>
+                    <section class="card membership-card" aria-labelledby="members-title">
+                        <div class="card-heading"><div><h2 id="members-title">Tenant memberships</h2><p>Membership access is checked by the API for each tenant.</p></div><span class="count-badge">@Memberships.Count</span></div>
+                        <EditForm Model="TenantSelection" OnValidSubmit="LoadMembershipsAsync" class="tenant-form">
+                            <DataAnnotationsValidator />
+                            <div class="field"><label for="tenant-id">Tenant ID</label><InputText id="tenant-id" @bind-Value="TenantSelection.TenantId" autocomplete="off" placeholder="Paste a tenant UUID" aria-describedby="tenant-hint" /><small id="tenant-hint">The API verifies your active membership before returning data.</small></div>
+                            <button class="primary-button" type="submit" disabled="@Busy">Load memberships <span aria-hidden="true">→</span></button>
+                        </EditForm>
+                        <div class="table-wrap">
+                            <table>
+                                <caption class="sr-only">Memberships for the selected tenant</caption>
+                                <thead><tr><th scope="col">Membership ID</th><th scope="col">Status</th><th scope="col">Joined</th></tr></thead>
+                                <tbody>
+                                    @if (Memberships.Count == 0)
+                                    {
+                                        <tr><td class="empty-cell" colspan="3">No memberships loaded yet.</td></tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var membership in Memberships)
+                                        {
+                                            <tr><td class="mono">@membership.Id</td><td><span class="table-status">@membership.Status</span></td><td>@membership.JoinedAtUtc.ToLocalTime().ToString("d")</td></tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            }
+            <footer class="page-footer">Common Web Platform <span>•</span> Local development evaluation</footer>
+        </section>
+    </main>
+</div>
+
+@code {
+    private readonly CredentialModel Credentials = new();
+    private readonly TenantModel TenantSelection = new();
+    private readonly List<MembershipResponse> Memberships = [];
+    private UserResponse? CurrentUser;
+    private bool Registering;
+    private bool Busy;
+    private string Error = string.Empty;
+    private string Message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            CurrentUser = await SendAsync<UserResponse>(HttpMethod.Get, "/api/v1/auth/me");
+        }
+        catch
+        {
+            // A missing session is the expected initial state for this evaluation shell.
+        }
+    }
+
+    private async Task AuthenticateAsync()
+    {
+        Busy = true;
+        Error = string.Empty;
+        Message = string.Empty;
+        try
+        {
+            if (Registering)
+            {
+                if (string.IsNullOrWhiteSpace(Credentials.DisplayName) || Credentials.DisplayName.Trim().Length > 120)
+                {
+                    Error = "Display name must be between 1 and 120 characters.";
+                    return;
+                }
+
+                var token = await GetCsrfAsync();
+                await SendAsync<object>(HttpMethod.Post, "/api/v1/auth/register", new
+                {
+                    email = Credentials.Email,
+                    displayName = Credentials.DisplayName,
+                    password = Credentials.Password,
+                }, token);
+            }
+
+            var loginToken = await GetCsrfAsync();
+            CurrentUser = await SendAsync<UserResponse>(HttpMethod.Post, "/api/v1/auth/login", new
+            {
+                email = Credentials.Email,
+                password = Credentials.Password,
+            }, loginToken);
+            Message = $"Signed in as {CurrentUser.Email}.";
+        }
+        catch (Exception exception)
+        {
+            Error = exception.Message;
+        }
+        finally
+        {
+            Busy = false;
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        Busy = true;
+        Error = string.Empty;
+        try
+        {
+            var token = await GetCsrfAsync();
+            await SendAsync<object>(HttpMethod.Post, "/api/v1/auth/logout", csrfToken: token);
+            CurrentUser = null;
+            Memberships.Clear();
+            Message = "You have signed out.";
+        }
+        catch (Exception exception)
+        {
+            Error = exception.Message;
+        }
+        finally
+        {
+            Busy = false;
+        }
+    }
+
+    private async Task LoadMembershipsAsync()
+    {
+        Busy = true;
+        Error = string.Empty;
+        Message = string.Empty;
+        try
+        {
+            var result = await SendAsync<List<MembershipResponse>>(
+                HttpMethod.Get,
+                "/api/v1/tenant/memberships",
+                tenantId: TenantSelection.TenantId);
+            Memberships.Clear();
+            Memberships.AddRange(result);
+            Message = $"{result.Count} membership{(result.Count == 1 ? string.Empty : "s")} loaded.";
+        }
+        catch (Exception exception)
+        {
+            Memberships.Clear();
+            Error = exception.Message;
+        }
+        finally
+        {
+            Busy = false;
+        }
+    }
+
+    private async Task<string> GetCsrfAsync()
+    {
+        var token = await SendAsync<CsrfResponse>(HttpMethod.Get, "/api/v1/auth/csrf");
+        return token.RequestToken;
+    }
+
+    private async Task<T> SendAsync<T>(HttpMethod method, string path, object? body = null, string? csrfToken = null, string? tenantId = null)
+    {
+        using var request = new HttpRequestMessage(method, path);
+        request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
+        if (body is not null)
+        {
+            request.Content = JsonContent.Create(body);
+        }
+        if (!string.IsNullOrEmpty(csrfToken))
+        {
+            request.Headers.Add("X-CSRF-TOKEN", csrfToken);
+        }
+        if (!string.IsNullOrEmpty(tenantId))
+        {
+            request.Headers.Add("X-Tenant-ID", tenantId);
+        }
+
+        using var response = await Http.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var problem = await response.Content.ReadFromJsonAsync<ProblemResponse>();
+            var fieldMessage = problem?.Errors?.Values.FirstOrDefault()?.FirstOrDefault();
+            throw new InvalidOperationException(fieldMessage ?? problem?.Title ?? $"Request failed ({(int)response.StatusCode}).");
+        }
+        if (response.StatusCode == HttpStatusCode.NoContent)
+        {
+            return default!;
+        }
+
+        return (await response.Content.ReadFromJsonAsync<T>())!;
+    }
+
+    private void ToggleMode()
+    {
+        Registering = !Registering;
+        Error = string.Empty;
+    }
+
+    private sealed class CredentialModel
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required, MinLength(12)]
+        public string Password { get; set; } = string.Empty;
+
+        public string DisplayName { get; set; } = string.Empty;
+    }
+
+    private sealed class TenantModel
+    {
+        [Required]
+        public string TenantId { get; set; } = string.Empty;
+    }
+
+    private sealed record UserResponse(Guid Id, string Email, string DisplayName);
+    private sealed record MembershipResponse(Guid Id, Guid UserId, string Status, DateTimeOffset JoinedAtUtc);
+    private sealed record CsrfResponse(string RequestToken);
+    private sealed record ProblemResponse(string? Title, Dictionary<string, string[]>? Errors);
+}
