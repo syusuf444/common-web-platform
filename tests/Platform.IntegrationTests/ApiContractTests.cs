@@ -86,6 +86,8 @@ public sealed class ApiContractTests(ApiFixture fixture) : IClassFixture<ApiFixt
         Assert.Contains(paths, path => path == "/api/v1/tenant/audit");
         Assert.Contains(paths, path => path == "/api/v1/tenant/settings");
         Assert.Contains(paths, path => path == "/api/v1/tenant/settings/{key}");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/notifications");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/notifications/{notificationId}");
         Assert.Equal(HttpStatusCode.OK, uiResponse.StatusCode);
     }
 
@@ -99,6 +101,7 @@ public sealed class ApiFixture : IAsyncLifetime
     private WebApplication? _application;
     private HttpClient? _client;
     private string? _isolatedConnectionString;
+    private string? _isolatedNotificationOutboxPath;
 
     public HttpClient Client => _client ?? throw new InvalidOperationException("The API fixture has not started.");
 
@@ -113,11 +116,19 @@ public sealed class ApiFixture : IAsyncLifetime
     {
         var baseConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__PlatformDb")
             ?? "Server=(localdb)\\MSSQLLocalDB;Database=CommonWebPlatform;Integrated Security=True;TrustServerCertificate=True";
+        var testRunId = Guid.NewGuid().ToString("N");
         _isolatedConnectionString = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(baseConnectionString)
         {
-            InitialCatalog = $"CWP_Api_{Guid.NewGuid():N}",
+            InitialCatalog = $"CWP_Api_{testRunId}",
         }.ConnectionString;
-        _application = ApiApplication.Build([$"--ConnectionStrings:PlatformDb={_isolatedConnectionString}"], "Development", "http://127.0.0.1:0");
+        _isolatedNotificationOutboxPath = Path.Combine(Path.GetTempPath(), $"CWP_Api_{testRunId}", "notifications");
+        _application = ApiApplication.Build(
+            [
+                $"--ConnectionStrings:PlatformDb={_isolatedConnectionString}",
+                $"--Notifications:LocalOutboxPath={_isolatedNotificationOutboxPath}",
+            ],
+            "Development",
+            "http://127.0.0.1:0");
         await using (var scope = _application.Services.CreateAsyncScope())
         {
             var database = scope.ServiceProvider.GetRequiredService<Platform.Api.Data.PlatformDbContext>();
@@ -150,6 +161,15 @@ public sealed class ApiFixture : IAsyncLifetime
                 .Options;
             await using var database = new Platform.Api.Data.PlatformDbContext(options);
             await database.Database.EnsureDeletedAsync();
+        }
+
+        if (_isolatedNotificationOutboxPath is not null)
+        {
+            var testRunDirectory = Path.GetDirectoryName(_isolatedNotificationOutboxPath)!;
+            if (Directory.Exists(testRunDirectory))
+            {
+                Directory.Delete(testRunDirectory, recursive: true);
+            }
         }
     }
 }

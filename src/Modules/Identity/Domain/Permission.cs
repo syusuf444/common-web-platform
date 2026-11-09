@@ -15,7 +15,9 @@ public static class PermissionCodes
     public const string AuditRead = "audit.read";
     public const string SettingsRead = "settings.read";
     public const string SettingsManage = "settings.manage";
+    public const string NotificationsRead = "notifications.read";
+    public const string NotificationsSend = "notifications.send";
 
     public static IReadOnlyList<string> All { get; } =
-        [MembersRead, MembersManage, RolesManage, AuditRead, SettingsRead, SettingsManage];
+        [MembersRead, MembersManage, RolesManage, AuditRead, SettingsRead, SettingsManage, NotificationsRead, NotificationsSend];
 }

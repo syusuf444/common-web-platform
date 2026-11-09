@@ -225,6 +225,16 @@ namespace Platform.Api.Data.Migrations
                         {
                             Code = "settings.manage",
                             Description = "Create, update, and delete non-secret tenant settings."
+                        },
+                        new
+                        {
+                            Code = "notifications.read",
+                            Description = "Read notifications in the tenant outbox."
+                        },
+                        new
+                        {
+                            Code = "notifications.send",
+                            Description = "Write notifications to the tenant outbox."
                         });
                 });
 

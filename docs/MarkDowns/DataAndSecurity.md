@@ -37,6 +37,7 @@ Platform-operator data and tenant data have distinct authorization paths. Cross-
 - Append security and administration events to the audit log with actor, tenant, action, target, UTC time and request correlation ID; audit metadata is limited to non-secret operational details.
 - Require the dedicated `audit.read` tenant permission for the paginated audit endpoint; the migration grants it to existing roles that already have `roles.manage`. Audit records have no API update or delete operation.
 - Manage ordinary, non-secret tenant settings under `/api/v1/tenant/settings`; `settings.read` and `settings.manage` are separate permissions, initially granted to existing roles with `roles.manage`. Values are plain text and limited to 2000 characters. Secret-like keys are rejected; do not store credentials, tokens, API keys, connection strings or cryptographic keys here. Setting values are never written to audit metadata.
+- Send and inspect tenant notifications using the separate `notifications.send` and `notifications.read` permissions. The current local adapter writes plain-text content to a tenant-partitioned local outbox and does not send email; keep secrets and sensitive personal data out of notification bodies.
 - Make retryable writes idempotent where duplicate execution would cause harm.
 
 ## Security Baseline

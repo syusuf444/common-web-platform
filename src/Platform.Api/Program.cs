@@ -9,9 +9,11 @@ using Platform.Api;
 using Platform.Api.Auditing;
 using Platform.Api.Data;
 using Platform.Api.Identity;
+using Platform.Api.Notifications;
 using Platform.Api.Settings;
 using Platform.Modules.Identity.Application;
 using Platform.Modules.Identity.Domain;
+using Platform.Modules.Notifications.Application;
 using Platform.Modules.Tenancy.Application;
 
 var app = ApiApplication.Build(args);
@@ -115,6 +117,12 @@ public static class ApiApplication
             options.AddPolicy(TenantPermissionPolicies.SettingsManage, policy => policy
                 .RequireAuthenticatedUser()
                 .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.SettingsManage)));
+            options.AddPolicy(TenantPermissionPolicies.NotificationsRead, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.NotificationsRead)));
+            options.AddPolicy(TenantPermissionPolicies.NotificationsSend, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.NotificationsSend)));
         });
         builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
         builder.Services.AddAntiforgery(options =>
@@ -142,6 +150,18 @@ public static class ApiApplication
         });
         builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
         builder.Services.AddHttpContextAccessor();
+        builder.Services.Configure<LocalNotificationOutboxOptions>(options =>
+        {
+            options.DirectoryPath = builder.Configuration["Notifications:LocalOutboxPath"]
+                ?? Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "CommonWebPlatform",
+                    "notification-outbox");
+        });
+        builder.Services.AddScoped<LocalNotificationOutbox>();
+        builder.Services.AddScoped<INotificationDeliveryPort>(services => services.GetRequiredService<LocalNotificationOutbox>());
+        builder.Services.AddScoped<INotificationOutboxReader>(services => services.GetRequiredService<LocalNotificationOutbox>());
+        builder.Services.AddScoped<INotificationService, NotificationService>();
         builder.Services.AddScoped<IAuditRecordService, AuditRecordService>();
         builder.Services.AddScoped<ITenantSettingService, TenantSettingService>();
         builder.Services.AddScoped<ITenantMembershipRepository, EfTenantMembershipRepository>();
@@ -294,6 +314,7 @@ public static class ApiApplication
         app.MapTenantMemberManagementEndpoints();
         app.MapAuditEndpoints();
         app.MapTenantSettingEndpoints();
+        app.MapNotificationEndpoints();
 
         return app;
     }

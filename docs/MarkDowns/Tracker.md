@@ -1,10 +1,10 @@
 # Common Web Platform - Development Tracker
 
-Last Updated: 2026-11-09
+Last Updated: 2026-11-10
 
-Project Status: PLAT-010 tenant settings module complete; awaiting user review
+Project Status: PLAT-011 notification module complete; awaiting user review
 
-Overall Completion: 63% (10 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 8 of 14)
+Overall Completion: 69% (11 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 9 of 14)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -47,6 +47,8 @@ Status: Complete
 - [x] Complete PLAT-009 with migration, security/admin event coverage, permission-controlled audit reads and verification.
 - [x] After user review, begin PLAT-010 tenant settings module.
 - [x] Complete PLAT-010 with validated non-secret settings, tenant uniqueness, authorization and verification.
+- [x] After user review, begin PLAT-011 notification module with local delivery.
+- [x] Complete PLAT-011 with a notification contract, local outbox delivery, observable failures and verification.
 
 ## Progress Update Format
 
@@ -129,3 +131,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-010 Done.
 - Verification: all 14 unit tests and 17 SQL Server/API integration tests passed; the integration test covers migration application, denied and allowed permissions, validation, duplicate keys, CRUD, audit value omission and tenant isolation. `dotnet format --verify-no-changes` passed; Release solution build/test completed with 0 warnings/errors. OpenAPI and Swagger tests include the settings collection and key routes. Integration tests apply the migration to isolated databases; the default `CommonWebPlatform` database was not changed.
 - Next action: user review of PLAT-010. Do not start PLAT-011 until explicitly approved.
+
+### 2026-11-10 — PLAT-011 tenant notifications with local delivery
+
+- Outcome: added a Notifications module contract and service, tenant-authorized send and outbox read endpoints, separate `notifications.send`/`notifications.read` permissions, and a local JSON file outbox partitioned by tenant. Writes are atomic; successes are logged, and file access/write failures are logged and surfaced as API errors. The local adapter does not send email or contact paid/third-party services. The migration grants both permissions to existing tenant roles that already have `roles.manage`.
+- Task IDs: PLAT-011 Done.
+- Verification: all 14 unit tests and 20 SQL Server/API integration tests passed; coverage includes authentication and permission denials, antiforgery, validation, successful outbox delivery, tenant isolation, error logging/propagation, and OpenAPI paths. Release solution build succeeded with 0 warnings/errors; `dotnet format --verify-no-changes` passed. Tests applied the migration and used isolated databases/outbox directories; the Demo Client database was not modified.
+- Next action: user review of PLAT-011. Do not start PLAT-012 until explicitly approved.

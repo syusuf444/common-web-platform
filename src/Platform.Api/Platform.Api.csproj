@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Modules\Tenancy\Platform.Modules.Tenancy.csproj" />
     <ProjectReference Include="..\Modules\Identity\Platform.Modules.Identity.csproj" />
+    <ProjectReference Include="..\Modules\Notifications\Platform.Modules.Notifications.csproj" />
   </ItemGroup>
 
   <ItemGroup>
