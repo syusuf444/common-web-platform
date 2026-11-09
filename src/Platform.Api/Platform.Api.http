@@ -1,6 +1,69 @@
 @Platform.Api_HostAddress = http://localhost:5247
 
-GET {{Platform.Api_HostAddress}}/weatherforecast/
+GET {{Platform.Api_HostAddress}}/health
 Accept: application/json
+
+###
+
+# Authenticate with the login flow documented in docs/MarkDowns/LocalDevelopment.md.
+# Supply the authenticated cookies, antiforgery request token, and an authorized tenant ID below.
+@tenantId = 00000000-0000-0000-0000-000000000000
+@membershipId = 00000000-0000-0000-0000-000000000000
+@roleId = 00000000-0000-0000-0000-000000000000
+@csrfToken = replace-with-request-token
+@authCookie = replace-with-CWP.Auth-cookie-value
+@antiForgeryCookie = replace-with-CWP.AntiForgery-cookie-value
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/members
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/members/{{membershipId}}
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+POST {{Platform.Api_HostAddress}}/api/v1/tenant/memberships
+Accept: application/json
+Content-Type: application/json
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+{
+  "email": "existing-user@example.local"
+}
+
+###
+
+PUT {{Platform.Api_HostAddress}}/api/v1/tenant/memberships/{{membershipId}}/status
+Accept: application/json
+Content-Type: application/json
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+{
+  "status": "Suspended"
+}
+
+###
+
+POST {{Platform.Api_HostAddress}}/api/v1/tenant/memberships/{{membershipId}}/roles/{{roleId}}
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+DELETE {{Platform.Api_HostAddress}}/api/v1/tenant/memberships/{{membershipId}}/roles/{{roleId}}
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
 
 ###

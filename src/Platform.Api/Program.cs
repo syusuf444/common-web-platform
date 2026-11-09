@@ -132,6 +132,7 @@ public static class ApiApplication
         builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
         builder.Services.AddScoped<ITenantMembershipRepository, EfTenantMembershipRepository>();
         builder.Services.AddScoped<ITenantRoleRepository, EfTenantRoleRepository>();
+        builder.Services.AddScoped<ITenantMemberManagementService, TenantMemberManagementService>();
         builder.Services.AddScoped<TenantRoleService>();
         builder.Services.AddScoped<IAuthorizationHandler, TenantPermissionAuthorizationHandler>();
         builder.Services.AddScoped<ITenantContextResolver, TenantContextResolver>();
@@ -176,8 +177,14 @@ public static class ApiApplication
                     },
                 });
             }
-            catch (Exception) when (!context.Response.HasStarted)
+            catch (Exception exception) when (!context.Response.HasStarted)
             {
+                context.RequestServices.GetRequiredService<ILogger<Program>>().LogError(
+                    exception,
+                    "Unhandled API error for {Method} {Path} (correlation ID {CorrelationId})",
+                    context.Request.Method,
+                    context.Request.Path,
+                    correlationId);
                 context.Response.Clear();
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 context.Response.Headers[CorrelationId.HeaderName] = correlationId;
@@ -270,6 +277,7 @@ public static class ApiApplication
 
         app.MapIdentityEndpoints(app.Environment.IsDevelopment());
         app.MapTenantAuthorizationEndpoints();
+        app.MapTenantMemberManagementEndpoints();
 
         return app;
     }

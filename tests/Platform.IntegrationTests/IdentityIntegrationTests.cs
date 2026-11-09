@@ -200,6 +200,233 @@ public sealed class IdentityIntegrationTests(ApiFixture fixture) : IClassFixture
         await Assert.ThrowsAsync<DbUpdateException>(() => database.SaveChangesAsync());
     }
 
+    [Fact]
+    public async Task TenantMemberManagementEnforcesPermissionsAndScopesMemberLifecycleAndRoles()
+    {
+        var scenario = await SeedAuthorizationScenarioAsync(fixture.Services);
+        const string targetEmail = "new-member@example.test";
+        const string targetPassword = "CWP-Member-Management-Password-284!";
+        const string readerEmail = "member-reader@example.test";
+        const string readerPassword = "CWP-Member-Management-Password-285!";
+
+        using var anonymousClient = fixture.CreateClient();
+        using var anonymousMembers = await anonymousClient.GetAsync("/api/v1/tenant/members");
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymousMembers.StatusCode);
+
+        await using (var scope = fixture.Services.CreateAsyncScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<PlatformUser>>();
+            var database = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+            var targetUser = new PlatformUser
+            {
+                Id = Guid.NewGuid(),
+                UserName = targetEmail,
+                Email = targetEmail,
+                DisplayName = "New Tenant Member",
+                Status = "Active",
+                CreatedAtUtc = DateTimeOffset.UtcNow,
+            };
+            var targetResult = await userManager.CreateAsync(targetUser, targetPassword);
+            Assert.True(targetResult.Succeeded, string.Join("; ", targetResult.Errors.Select(error => error.Code)));
+
+            var readerUser = new PlatformUser
+            {
+                Id = Guid.NewGuid(),
+                UserName = readerEmail,
+                Email = readerEmail,
+                DisplayName = "Unprivileged Member",
+                Status = "Active",
+                CreatedAtUtc = DateTimeOffset.UtcNow,
+            };
+            var readerResult = await userManager.CreateAsync(readerUser, readerPassword);
+            Assert.True(readerResult.Succeeded, string.Join("; ", readerResult.Errors.Select(error => error.Code)));
+            database.Memberships.Add(CreateMembership(scenario.TenantId, readerUser.Id));
+
+            var managerRole = await database.TenantRoles.SingleAsync(
+                role => role.TenantId == scenario.TenantId && role.Name == "Role Manager");
+            database.TenantRolePermissions.AddRange(
+                new TenantRolePermission
+                {
+                    TenantId = scenario.TenantId,
+                    RoleId = managerRole.Id,
+                    PermissionCode = PermissionCodes.MembersRead,
+                },
+                new TenantRolePermission
+                {
+                    TenantId = scenario.TenantId,
+                    RoleId = managerRole.Id,
+                    PermissionCode = PermissionCodes.MembersManage,
+                });
+            await database.SaveChangesAsync();
+        }
+
+        using var client = fixture.CreateClient();
+        var token = await GetCsrfTokenAsync(client);
+        using var login = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/auth/login",
+            new { email = scenario.UserEmail, password = scenario.Password },
+            token);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        client.DefaultRequestHeaders.Add("X-Tenant-ID", scenario.TenantId.ToString());
+
+        using var initialMembers = await client.GetAsync("/api/v1/tenant/members");
+        Assert.Equal(HttpStatusCode.OK, initialMembers.StatusCode);
+        using (var body = JsonDocument.Parse(await initialMembers.Content.ReadAsStringAsync()))
+        {
+            Assert.Equal(2, body.RootElement.GetArrayLength());
+        }
+
+        using var ownMember = await client.GetAsync($"/api/v1/tenant/members/{scenario.MembershipId}");
+        Assert.Equal(HttpStatusCode.OK, ownMember.StatusCode);
+        using var crossTenantMember = await client.GetAsync($"/api/v1/tenant/members/{scenario.OtherTenantMembershipId}");
+        Assert.Equal(HttpStatusCode.NotFound, crossTenantMember.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var added = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/memberships",
+            new { email = targetEmail },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.Created, added.StatusCode);
+        using var addedBody = JsonDocument.Parse(await added.Content.ReadAsStringAsync());
+        var targetMembershipId = addedBody.RootElement.GetProperty("membershipId").GetGuid();
+
+        token = await GetCsrfTokenAsync(client);
+        using var duplicate = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/memberships",
+            new { email = targetEmail },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var invalidEmail = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/memberships",
+            new { email = "not-an-email" },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.BadRequest, invalidEmail.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var unknown = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/memberships",
+            new { email = "unknown-member@example.test" },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var selfSuspend = await PutJsonWithCsrfAsync(
+            client,
+            $"/api/v1/tenant/memberships/{scenario.MembershipId}/status",
+            new { status = "Suspended" },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.Conflict, selfSuspend.StatusCode);
+        using (var selfSuspendBody = JsonDocument.Parse(await selfSuspend.Content.ReadAsStringAsync()))
+        {
+            Assert.Equal("cannot_suspend_self", selfSuspendBody.RootElement.GetProperty("code").GetString());
+        }
+
+        token = await GetCsrfTokenAsync(client);
+        using var invalidStatus = await PutJsonWithCsrfAsync(
+            client,
+            $"/api/v1/tenant/memberships/{targetMembershipId}/status",
+            new { status = "Paused" },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.BadRequest, invalidStatus.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var missingMemberStatus = await PutJsonWithCsrfAsync(
+            client,
+            $"/api/v1/tenant/memberships/{Guid.NewGuid()}/status",
+            new { status = "Active" },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.NotFound, missingMemberStatus.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var crossTenantUpdate = await PutJsonWithCsrfAsync(
+            client,
+            $"/api/v1/tenant/memberships/{scenario.OtherTenantMembershipId}/status",
+            new { status = "Suspended" },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.NotFound, crossTenantUpdate.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var suspend = await PutJsonWithCsrfAsync(
+            client,
+            $"/api/v1/tenant/memberships/{targetMembershipId}/status",
+            new { status = "Suspended" },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.OK, suspend.StatusCode);
+        using (var suspendedBody = JsonDocument.Parse(await suspend.Content.ReadAsStringAsync()))
+        {
+            Assert.Equal("Suspended", suspendedBody.RootElement.GetProperty("status").GetString());
+        }
+
+        token = await GetCsrfTokenAsync(client);
+        using var reactivate = await PutJsonWithCsrfAsync(
+            client,
+            $"/api/v1/tenant/memberships/{targetMembershipId}/status",
+            new { status = "Active" },
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.OK, reactivate.StatusCode);
+
+        token = await GetCsrfTokenAsync(client);
+        using var createRole = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/tenant/roles",
+            new CreateTenantRoleRequest("Member Manager Test", [PermissionCodes.MembersRead]),
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.Created, createRole.StatusCode);
+        var createdRole = await createRole.Content.ReadFromJsonAsync<TenantRoleSummary>();
+        Assert.NotNull(createdRole);
+
+        token = await GetCsrfTokenAsync(client);
+        using var assignment = await PostEmptyWithCsrfAsync(
+            client,
+            $"/api/v1/tenant/memberships/{targetMembershipId}/roles/{createdRole.Id}",
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.NoContent, assignment.StatusCode);
+
+        using var targetAfterAssignment = await client.GetAsync($"/api/v1/tenant/members/{targetMembershipId}");
+        using (var targetBody = JsonDocument.Parse(await targetAfterAssignment.Content.ReadAsStringAsync()))
+        {
+            Assert.Equal(createdRole.Id, targetBody.RootElement.GetProperty("roles")[0].GetProperty("id").GetGuid());
+        }
+
+        using var removeRole = await DeleteEmptyWithCsrfAsync(
+            client,
+            $"/api/v1/tenant/memberships/{targetMembershipId}/roles/{createdRole.Id}",
+            token,
+            scenario.TenantId);
+        Assert.Equal(HttpStatusCode.NoContent, removeRole.StatusCode);
+
+        using var readerClient = fixture.CreateClient();
+        token = await GetCsrfTokenAsync(readerClient);
+        using var readerLogin = await PostJsonWithCsrfAsync(
+            readerClient,
+            "/api/v1/auth/login",
+            new { email = readerEmail, password = readerPassword },
+            token);
+        Assert.Equal(HttpStatusCode.OK, readerLogin.StatusCode);
+        readerClient.DefaultRequestHeaders.Add("X-Tenant-ID", scenario.TenantId.ToString());
+        using var deniedList = await readerClient.GetAsync("/api/v1/tenant/members");
+        Assert.Equal(HttpStatusCode.Forbidden, deniedList.StatusCode);
+    }
+
     private static async Task<string> GetCsrfTokenAsync(HttpClient client)
     {
         using var response = await client.GetAsync("/api/v1/auth/csrf");
@@ -345,6 +572,30 @@ public sealed class IdentityIntegrationTests(ApiFixture fixture) : IClassFixture
     private static async Task<HttpResponseMessage> PostEmptyWithCsrfAsync(HttpClient client, string path, string token, Guid? tenantId = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, path);
+        request.Headers.Add("X-CSRF-TOKEN", token);
+        if (tenantId.HasValue && !client.DefaultRequestHeaders.Contains("X-Tenant-ID"))
+        {
+            request.Headers.Add("X-Tenant-ID", tenantId.Value.ToString());
+        }
+
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> PutJsonWithCsrfAsync(HttpClient client, string path, object body, string token, Guid? tenantId = null)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, path) { Content = JsonContent.Create(body) };
+        request.Headers.Add("X-CSRF-TOKEN", token);
+        if (tenantId.HasValue && !client.DefaultRequestHeaders.Contains("X-Tenant-ID"))
+        {
+            request.Headers.Add("X-Tenant-ID", tenantId.Value.ToString());
+        }
+
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> DeleteEmptyWithCsrfAsync(HttpClient client, string path, string token, Guid? tenantId = null)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Delete, path);
         request.Headers.Add("X-CSRF-TOKEN", token);
         if (tenantId.HasValue && !client.DefaultRequestHeaders.Contains("X-Tenant-ID"))
         {

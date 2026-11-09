@@ -24,6 +24,18 @@ Prerequisites: the .NET 10 SDK, Git, EF Core CLI, and a locally installed/runnin
 
    The token and cookie must come from the same `/csrf` request; sending only the JSON body returns `antiforgery_validation_failed`. Fetch a fresh token after sign-in for subsequent state-changing auth requests. Registration is disabled outside Development; production provisioning, email verification and recovery are not implemented yet.
 
+### Tenant member management
+
+After signing in, send the active tenant ID in `X-Tenant-ID`. Member reads require `members.read`; adding members and changing membership status require `members.manage`; assigning or removing roles requires `roles.manage`. State-changing requests also need the authenticated `CWP.Auth` cookie, the paired `CWP.AntiForgery` cookie, and its request token in `X-CSRF-TOKEN`.
+
+- `GET /api/v1/tenant/members` lists tenant members and assigned roles.
+- `GET /api/v1/tenant/members/{membershipId}` reads one member; IDs from another tenant return `404`.
+- `POST /api/v1/tenant/memberships` adds an existing active platform account with `{"email":"person@example.local"}`. An unknown account returns `404`; an existing membership returns `409`. Email invitations are not implemented.
+- `PUT /api/v1/tenant/memberships/{membershipId}/status` accepts `{"status":"Suspended"}` or `{"status":"Active"}`. An administrator cannot suspend their own membership.
+- `POST` and `DELETE /api/v1/tenant/memberships/{membershipId}/roles/{roleId}` assign and remove tenant roles; both require `roles.manage`.
+
+The [Platform.Api.http](../../src/Platform.Api/Platform.Api.http) file contains request templates for these endpoints. Replace its tenant, membership, role, cookie and token placeholders with values from an authorized local session.
+
 Expose only local development ports by default. Compose is infrastructure convenience, not a requirement to containerize the application. Local email delivery is captured to console or a local sink. File storage uses a local adapter. No paid cloud service is needed for the initial workflow.
 
 ## Local Deployment Shape
@@ -72,5 +84,4 @@ Follow the mandatory coding and security requirements in [Rules.md](./Rules.md) 
 - Docs and `Tracker.md` are updated; decision changes are recorded.
 
 Keep CI free-tier compatible when introduced: restore, build, unit/integration tests and frontend checks. Do not make external paid services a test prerequisite.
-
 

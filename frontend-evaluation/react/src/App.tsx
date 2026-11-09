@@ -1,9 +1,20 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import './App.css'
+import './Admin.css'
 
 type User = { id: string; email: string; displayName: string }
-type Membership = { id: string; userId: string; status: string; joinedAtUtc: string }
+type TenantRole = { id: string; name: string; isSystem: boolean; permissionCodes: string[] }
+type TenantMemberRole = { id: string; name: string }
+type Member = {
+  membershipId: string
+  userId: string
+  email: string
+  displayName: string
+  status: 'Active' | 'Invited' | 'Suspended'
+  joinedAtUtc: string
+  roles: TenantMemberRole[]
+}
 type Problem = { title?: string; errors?: Record<string, string[]> }
 type Csrf = { requestToken: string }
 
@@ -35,7 +46,10 @@ function App() {
   const [isRegistering, setIsRegistering] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [tenantId, setTenantId] = useState('')
-  const [memberships, setMemberships] = useState<Membership[]>([])
+  const [tenantLoaded, setTenantLoaded] = useState(false)
+  const [memberEmail, setMemberEmail] = useState('')
+  const [members, setMembers] = useState<Member[]>([])
+  const [roles, setRoles] = useState<TenantRole[]>([])
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -80,7 +94,10 @@ function App() {
       const token = await getCsrfToken()
       await api('/api/v1/auth/logout', { method: 'POST', headers: { 'X-CSRF-TOKEN': token } })
       setUser(null)
-      setMemberships([])
+      setMembers([])
+      setRoles([])
+      setTenantId('')
+      setTenantLoaded(false)
       setMessage('You have signed out.')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Sign out failed.')
@@ -91,21 +108,104 @@ function App() {
 
   async function loadMemberships(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    await loadTenantData(tenantId.trim())
+  }
+
+  async function loadTenantData(selectedTenantId: string) {
     setBusy(true)
     setError('')
     setMessage('')
     try {
-      const result = await api<Membership[]>('/api/v1/tenant/memberships', {
-        headers: { 'X-Tenant-ID': tenantId.trim() },
-      })
-      setMemberships(result)
-      setMessage(`${result.length} membership${result.length === 1 ? '' : 's'} loaded.`)
+      const headers = { 'X-Tenant-ID': selectedTenantId }
+      const [memberResult, roleResult] = await Promise.all([
+        api<Member[]>('/api/v1/tenant/members', { headers }),
+        api<TenantRole[]>('/api/v1/tenant/roles', { headers }),
+      ])
+      setMembers(memberResult)
+      setRoles(roleResult)
+      setTenantLoaded(true)
+      setMessage(`${memberResult.length} member${memberResult.length === 1 ? '' : 's'} loaded.`)
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Memberships could not be loaded.')
-      setMemberships([])
+      setError(reason instanceof Error ? reason.message : 'Tenant data could not be loaded.')
+      setMembers([])
+      setRoles([])
+      setTenantLoaded(false)
     } finally {
       setBusy(false)
     }
+  }
+
+  async function addMember(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      const token = await getCsrfToken()
+      await api('/api/v1/tenant/memberships', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': token, 'X-Tenant-ID': tenantId.trim() },
+        body: JSON.stringify({ email: memberEmail.trim() }),
+      })
+      setMemberEmail('')
+      setMessage('Member added to the tenant.')
+      await refreshTenantData()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'The member could not be added.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function updateMemberStatus(member: Member) {
+    setBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      const token = await getCsrfToken()
+      const status = member.status === 'Active' ? 'Suspended' : 'Active'
+      await api(`/api/v1/tenant/memberships/${member.membershipId}/status`, {
+        method: 'PUT',
+        headers: { 'X-CSRF-TOKEN': token, 'X-Tenant-ID': tenantId.trim() },
+        body: JSON.stringify({ status }),
+      })
+      setMessage(`${member.email} is now ${status.toLowerCase()}.`)
+      await refreshTenantData()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Membership status could not be updated.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function toggleRole(member: Member, role: TenantRole, assigned: boolean) {
+    setBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      const token = await getCsrfToken()
+      const path = `/api/v1/tenant/memberships/${member.membershipId}/roles/${role.id}`
+      await api(path, {
+        method: assigned ? 'DELETE' : 'POST',
+        headers: { 'X-CSRF-TOKEN': token, 'X-Tenant-ID': tenantId.trim() },
+      })
+      setMessage(`${role.name} ${assigned ? 'removed from' : 'assigned to'} ${member.email}.`)
+      await refreshTenantData()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'The role assignment could not be updated.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function refreshTenantData() {
+    const headers = { 'X-Tenant-ID': tenantId.trim() }
+    const [memberResult, roleResult] = await Promise.all([
+      api<Member[]>('/api/v1/tenant/members', { headers }),
+      api<TenantRole[]>('/api/v1/tenant/roles', { headers }),
+    ])
+    setMembers(memberResult)
+    setRoles(roleResult)
   }
 
   return (
@@ -162,18 +262,41 @@ function App() {
               </section>
 
               <section className="card membership-card" aria-labelledby="members-title">
-                <div className="card-heading"><div><h2 id="members-title">Tenant memberships</h2><p>Membership access is checked by the API for each tenant.</p></div><span className="count-badge">{memberships.length}</span></div>
+                <div className="card-heading"><div><h2 id="members-title">Tenant members</h2><p>Member changes are verified by the API for the selected tenant.</p></div><span className="count-badge">{members.length}</span></div>
                 <form className="tenant-form" onSubmit={loadMemberships}>
-                  <div className="field"><label htmlFor="tenant-id">Tenant ID</label><input id="tenant-id" inputMode="text" autoComplete="off" placeholder="Paste a tenant UUID" value={tenantId} onChange={event => setTenantId(event.target.value)} required aria-describedby="tenant-hint" /><small id="tenant-hint">The API verifies your active membership before returning data.</small></div>
-                  <button className="primary-button" type="submit" disabled={busy}>Load memberships <span aria-hidden="true">→</span></button>
+                  <div className="field"><label htmlFor="tenant-id">Tenant ID</label><input id="tenant-id" inputMode="text" autoComplete="off" placeholder="Paste a tenant UUID" value={tenantId} onChange={event => { setTenantId(event.target.value); setTenantLoaded(false) }} required aria-describedby="tenant-hint" /><small id="tenant-hint">The API verifies your active membership and permissions.</small></div>
+                  <button className="primary-button" type="submit" disabled={busy}>Load tenant <span aria-hidden="true">→</span></button>
                 </form>
-                <div className="table-wrap">
-                  <table>
-                    <caption className="sr-only">Memberships for the selected tenant</caption>
-                    <thead><tr><th scope="col">Membership ID</th><th scope="col">Status</th><th scope="col">Joined</th></tr></thead>
-                    <tbody>{memberships.length === 0 ? <tr><td className="empty-cell" colSpan={3}>No memberships loaded yet.</td></tr> : memberships.map(item => <tr key={item.id}><td className="mono">{item.id}</td><td><span className="table-status">{item.status}</span></td><td>{new Date(item.joinedAtUtc).toLocaleDateString()}</td></tr>)}</tbody>
-                  </table>
-                </div>
+                {tenantLoaded && <>
+                  <form className="add-member-form" onSubmit={addMember}>
+                    <div className="field"><label htmlFor="member-email">Add existing account</label><input id="member-email" type="email" autoComplete="email" placeholder="person@example.com" value={memberEmail} onChange={event => setMemberEmail(event.target.value)} required aria-describedby="member-email-hint" /><small id="member-email-hint">The person must already have an account. Email invitations are not available yet.</small></div>
+                    <button className="primary-button" type="submit" disabled={busy}>Add member <span aria-hidden="true">+</span></button>
+                  </form>
+                  {members.length === 0 ? <p className="empty-state">No members belong to this tenant yet.</p> : (
+                    <div className="member-list">
+                      {members.map(member => (
+                        <article className="member-row" key={member.membershipId} aria-labelledby={`member-${member.membershipId}`}>
+                          <div className="member-summary">
+                            <span className="avatar" aria-hidden="true">{member.displayName.slice(0, 1).toUpperCase()}</span>
+                            <div><h3 id={`member-${member.membershipId}`}>{member.displayName}</h3><p>{member.email}</p><small className="mono">{member.membershipId}</small></div>
+                            <span className={`table-status ${member.status === 'Suspended' ? 'status-suspended' : ''}`}>{member.status}</span>
+                          </div>
+                          <div className="member-actions">
+                            <fieldset className="role-assignments">
+                              <legend>Tenant roles</legend>
+                              {roles.length === 0 ? <p className="empty-state">No roles are available.</p> : roles.map(role => {
+                                const assigned = member.roles.some(item => item.id === role.id)
+                                return <label key={role.id}><input type="checkbox" checked={assigned} disabled={busy || member.status !== 'Active'} onChange={() => toggleRole(member, role, assigned)} />{role.name}</label>
+                              })}
+                            </fieldset>
+                            <button className="quiet-button member-status-button" type="button" onClick={() => updateMemberStatus(member)} disabled={busy || member.userId === user.id}>{member.status === 'Active' ? 'Deactivate' : 'Reactivate'}</button>
+                          </div>
+                          <p className="member-joined">Joined {new Date(member.joinedAtUtc).toLocaleDateString()}</p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </>}
               </section>
             </div>
           )}

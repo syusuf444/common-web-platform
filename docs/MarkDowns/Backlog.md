@@ -11,7 +11,7 @@ Status values: `Not Started`, `In Progress`, `Blocked`, `Done`. Priority: `P0` r
 | PLAT-005 | P0 | Implement tenant context and tenant data access guard | Done | PLAT-004 | Tenant resolved from authenticated membership; missing/invalid context denied; isolation integration tests cover list/read/write/delete and guessed IDs. |
 | PLAT-006 | P0 | Implement identity, membership and session lifecycle | Done | PLAT-005 | SQL Server-backed ASP.NET Core Identity supports development registration and secure sign-in; CSRF-protected cookie sessions expire and revoke; login failures are generic and secrets are never logged or stored in plaintext. |
 | PLAT-007 | P0 | Implement roles, permissions and authorization policies | Done | PLAT-006 | Server denies by default; role assignment is tenant-consistent; positive and negative permission tests pass. |
-| PLAT-008 | P1 | Build authenticated admin shell and member management | Not Started | PLAT-007 | Admin can invite/add, deactivate and assign roles within tenant; UI reflects but does not replace server authorization. |
+| PLAT-008 | P1 | Build authenticated admin shell and member management | Done | PLAT-007 | Admin can add an existing registered user by email, deactivate/reactivate their tenant membership, and assign/remove tenant roles. UI reflects but does not replace server authorization; email invitations wait for PLAT-011 notification delivery. |
 | PLAT-009 | P1 | Add audit records for security and administration actions | Not Started | PLAT-007 | Actor, tenant, action, target, time and correlation recorded; secrets excluded; audit reads permission-controlled. |
 | PLAT-010 | P1 | Add tenant settings module | Not Started | PLAT-009 | Tenant can manage validated non-secret settings; unique tenant/key constraint and authorization tests exist. |
 | PLAT-011 | P1 | Add notification module with local delivery adapter | Not Started | PLAT-010 | Domain module can request notification via contract; local delivery visible without third-party account; failures are observable. |
@@ -26,4 +26,3 @@ Status values: `Not Started`, `In Progress`, `Blocked`, `Done`. Priority: `P0` r
 - A task is `Done` only when all acceptance criteria and Definition of Done in `LocalDevelopment.md` are met.
 - Split any task that cannot be completed and verified as one manageable solo-development slice.
 - Add IDs in sequence; do not reuse retired IDs. Record blocker and next action for blocked work in `Tracker.md`.
-

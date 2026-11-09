@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-09
 
-Project Status: Backend foundation complete; frontend recommendation awaiting review
+Project Status: Authenticated admin shell and member management complete; awaiting review
 
-Overall Completion: 44% (7 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 5 of 14)
+Overall Completion: 50% (8 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 6 of 14)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -41,7 +41,9 @@ Status: Complete
 - [x] Complete PLAT-007 role, permission and authorization policies.
 - [x] Start PLAT-001 frontend comparison after the backend authorization contract is documented and verified through Swagger.
 - [x] Complete PLAT-001 with browser flow, accessibility and build/run comparison; record a proposed frontend recommendation.
-- [ ] Begin PLAT-008 authenticated admin shell and member management after the frontend recommendation is reviewed.
+- [x] Accept the React/TypeScript frontend recommendation after user review.
+- [x] Complete PLAT-008 authenticated admin shell and member management; verify member lifecycle and role assignment.
+- [ ] After user review, begin PLAT-009 audit records for security and administration actions.
 
 ## Progress Update Format
 
@@ -104,4 +106,9 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Verification: React `npm run build`, `npm run lint`, and `npm audit` passed (0 vulnerabilities); Blazor build passed with 0 warnings/errors; API build passed with 0 warnings/errors. Browser verification confirmed both sign-in, tenant membership and sign-out flows. Labeled controls, announcements, table semantics and responsive widths were checked as a qualitative accessibility smoke test, not a formal WCAG audit. Fixed the Blazor evaluation page's always-visible default error banner; verified it stays hidden on normal signed-out startup and after sign-out.
 - Next action: user review/approval of the proposed React recommendation. After approval, begin PLAT-008; do not start production frontend implementation before then.
 
+### 2026-11-09 — PLAT-008 authenticated admin shell and member management
 
+- Outcome: completed the React tenant member-management shell and tenant-scoped API flows. Administrators can add active registered accounts, suspend/reactivate memberships, and assign/remove tenant roles. The API rejects self-suspension, returns 404 for accounts or memberships outside the active tenant, and returns 409 for duplicate membership. Invitations remain deferred until PLAT-011.
+- Task IDs: PLAT-008 Done.
+- Verification: all 14 unit tests and 15 SQL Server/API integration tests passed; the new integration test covers member listing/detail, permission denial, registered/unknown/duplicate account handling, status changes, self-suspension rejection, cross-tenant IDs, and role assignment/removal. `dotnet format --verify-no-changes` passed; Release solution build succeeded with 0 warnings/errors; React production build and lint passed. Live `/health`, Swagger UI and OpenAPI returned 200 and OpenAPI listed the member and membership-status routes. The React preview is running at `http://localhost:5173`; the API is running at `http://localhost:5247`.
+- Next action: user review of PLAT-008. Do not start PLAT-009 until explicitly approved.
