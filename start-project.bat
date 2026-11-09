@@ -130,5 +130,5 @@ echo Common Web Platform is starting:
 echo   Frontend:  http://localhost:5173
 echo   API:       http://localhost:5247
 echo   Swagger:   http://localhost:5247/swagger
-echo   Database:  CommonWebPlatform on %SQL_SERVER%
+echo   Database server: %SQL_SERVER%
 exit /b 0
