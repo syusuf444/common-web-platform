@@ -159,6 +159,40 @@ namespace Platform.Api.Data.Migrations
                     b.ToTable("TenantSettings", "platform");
                 });
 
+            modelBuilder.Entity("Platform.Modules.Files.Domain.TenantFile", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("UploadedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("TenantId", "Id");
+
+                    b.HasIndex("TenantId", "UploadedAtUtc");
+
+                    b.ToTable("TenantFiles", "platform");
+                });
+
             modelBuilder.Entity("Platform.Modules.Identity.Domain.MembershipRole", b =>
                 {
                     b.Property<Guid>("TenantId")
@@ -235,6 +269,16 @@ namespace Platform.Api.Data.Migrations
                         {
                             Code = "notifications.send",
                             Description = "Write notifications to the tenant outbox."
+                        },
+                        new
+                        {
+                            Code = "files.read",
+                            Description = "Read metadata and download files in the tenant."
+                        },
+                        new
+                        {
+                            Code = "files.upload",
+                            Description = "Upload files to the tenant."
                         });
                 });
 
@@ -454,6 +498,15 @@ namespace Platform.Api.Data.Migrations
                 });
 
             modelBuilder.Entity("Platform.Api.Data.TenantSetting", b =>
+                {
+                    b.HasOne("Platform.Modules.Tenancy.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Platform.Modules.Files.Domain.TenantFile", b =>
                 {
                     b.HasOne("Platform.Modules.Tenancy.Domain.Tenant", null)
                         .WithMany()

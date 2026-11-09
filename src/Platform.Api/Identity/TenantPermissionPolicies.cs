@@ -10,4 +10,6 @@ public static class TenantPermissionPolicies
     public const string SettingsManage = "tenant.settings.manage";
     public const string NotificationsRead = "tenant.notifications.read";
     public const string NotificationsSend = "tenant.notifications.send";
+    public const string FilesRead = "tenant.files.read";
+    public const string FilesUpload = "tenant.files.upload";
 }

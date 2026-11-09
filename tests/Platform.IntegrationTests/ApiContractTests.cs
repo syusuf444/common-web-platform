@@ -88,6 +88,14 @@ public sealed class ApiContractTests(ApiFixture fixture) : IClassFixture<ApiFixt
         Assert.Contains(paths, path => path == "/api/v1/tenant/settings/{key}");
         Assert.Contains(paths, path => path == "/api/v1/tenant/notifications");
         Assert.Contains(paths, path => path == "/api/v1/tenant/notifications/{notificationId}");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/files");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/files/{fileId}");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/files/{fileId}/content");
+        var upload = document.RootElement
+            .GetProperty("paths")
+            .GetProperty("/api/v1/tenant/files")
+            .GetProperty("post");
+        Assert.True(upload.GetProperty("requestBody").GetProperty("content").TryGetProperty("multipart/form-data", out _));
         Assert.Equal(HttpStatusCode.OK, uiResponse.StatusCode);
     }
 
@@ -102,10 +110,13 @@ public sealed class ApiFixture : IAsyncLifetime
     private HttpClient? _client;
     private string? _isolatedConnectionString;
     private string? _isolatedNotificationOutboxPath;
+    private string? _isolatedFileStoragePath;
 
     public HttpClient Client => _client ?? throw new InvalidOperationException("The API fixture has not started.");
 
     public IServiceProvider Services => _application?.Services ?? throw new InvalidOperationException("The API fixture has not started.");
+
+    public string FileStoragePath => _isolatedFileStoragePath ?? throw new InvalidOperationException("The API fixture has not started.");
 
     public HttpClient CreateClient() => new(new HttpClientHandler { CookieContainer = new System.Net.CookieContainer() })
     {
@@ -122,10 +133,12 @@ public sealed class ApiFixture : IAsyncLifetime
             InitialCatalog = $"CWP_Api_{testRunId}",
         }.ConnectionString;
         _isolatedNotificationOutboxPath = Path.Combine(Path.GetTempPath(), $"CWP_Api_{testRunId}", "notifications");
+        _isolatedFileStoragePath = Path.Combine(Path.GetTempPath(), $"CWP_Api_{testRunId}", "files");
         _application = ApiApplication.Build(
             [
                 $"--ConnectionStrings:PlatformDb={_isolatedConnectionString}",
                 $"--Notifications:LocalOutboxPath={_isolatedNotificationOutboxPath}",
+                $"--Files:LocalStoragePath={_isolatedFileStoragePath}",
             ],
             "Development",
             "http://127.0.0.1:0");
@@ -163,9 +176,9 @@ public sealed class ApiFixture : IAsyncLifetime
             await database.Database.EnsureDeletedAsync();
         }
 
-        if (_isolatedNotificationOutboxPath is not null)
+        if (_isolatedFileStoragePath is not null)
         {
-            var testRunDirectory = Path.GetDirectoryName(_isolatedNotificationOutboxPath)!;
+            var testRunDirectory = Path.GetDirectoryName(_isolatedFileStoragePath)!;
             if (Directory.Exists(testRunDirectory))
             {
                 Directory.Delete(testRunDirectory, recursive: true);

@@ -20,6 +20,8 @@ public sealed class PermissionConfiguration : IEntityTypeConfiguration<Permissio
             new Permission { Code = PermissionCodes.SettingsRead, Description = "Read non-secret tenant settings." },
             new Permission { Code = PermissionCodes.SettingsManage, Description = "Create, update, and delete non-secret tenant settings." },
             new Permission { Code = PermissionCodes.NotificationsRead, Description = "Read notifications in the tenant outbox." },
-            new Permission { Code = PermissionCodes.NotificationsSend, Description = "Write notifications to the tenant outbox." });
+            new Permission { Code = PermissionCodes.NotificationsSend, Description = "Write notifications to the tenant outbox." },
+            new Permission { Code = PermissionCodes.FilesRead, Description = "Read metadata and download files in the tenant." },
+            new Permission { Code = PermissionCodes.FilesUpload, Description = "Upload files to the tenant." });
     }
 }

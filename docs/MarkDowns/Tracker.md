@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-10
 
-Project Status: PLAT-011 notification module complete; awaiting user review
+Project Status: PLAT-012 file metadata and local storage complete; awaiting user review
 
-Overall Completion: 69% (11 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 9 of 14)
+Overall Completion: 75% (12 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 10 of 14)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -49,6 +49,8 @@ Status: Complete
 - [x] Complete PLAT-010 with validated non-secret settings, tenant uniqueness, authorization and verification.
 - [x] After user review, begin PLAT-011 notification module with local delivery.
 - [x] Complete PLAT-011 with a notification contract, local outbox delivery, observable failures and verification.
+- [x] After user review, begin PLAT-012 tenant file metadata and local storage.
+- [x] Complete PLAT-012 with tenant-scoped upload/download, size/type checks, safe local storage and verification.
 
 ## Progress Update Format
 
@@ -138,3 +140,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-011 Done.
 - Verification: all 14 unit tests and 20 SQL Server/API integration tests passed; coverage includes authentication and permission denials, antiforgery, validation, successful outbox delivery, tenant isolation, error logging/propagation, and OpenAPI paths. Release solution build succeeded with 0 warnings/errors; `dotnet format --verify-no-changes` passed. Tests applied the migration and used isolated databases/outbox directories; the Demo Client database was not modified.
 - Next action: user review of PLAT-011. Do not start PLAT-012 until explicitly approved.
+
+### 2026-11-10 — PLAT-012 tenant file metadata and local storage
+
+- Outcome: added a Files module with SQL Server metadata and tenant-scoped list, detail, upload and download endpoints. Local storage uses generated opaque file names partitioned by tenant; paths are constrained beneath the configured root and tenant directories cannot be reparse points. Uploads require `files.upload`, reads require `files.read`, and the migration grants both permissions to existing `roles.manage` roles. Uploads are limited to signature-checked PDF, PNG and JPEG files up to 10 MiB. Metadata persistence failures remove the newly stored content.
+- Task IDs: PLAT-012 Done.
+- Verification: all 14 unit tests and 22 SQL Server/API integration tests passed, including authorization, antiforgery, upload size/type/signature validation, metadata persistence, download, tenant isolation, path/name traversal protection, and OpenAPI multipart documentation. Release solution test/build passed; `dotnet format --verify-no-changes` and `git diff --check` passed. Tests applied migrations to isolated databases and used temporary storage; the Demo Client database was not modified.
+- Next action: user review of PLAT-012. Do not start PLAT-013 until explicitly approved.

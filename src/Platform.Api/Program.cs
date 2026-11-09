@@ -8,12 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 using Platform.Api;
 using Platform.Api.Auditing;
 using Platform.Api.Data;
+using Platform.Api.Files;
 using Platform.Api.Identity;
 using Platform.Api.Notifications;
 using Platform.Api.Settings;
 using Platform.Modules.Identity.Application;
 using Platform.Modules.Identity.Domain;
 using Platform.Modules.Notifications.Application;
+using Platform.Modules.Files.Application;
 using Platform.Modules.Tenancy.Application;
 
 var app = ApiApplication.Build(args);
@@ -123,6 +125,12 @@ public static class ApiApplication
             options.AddPolicy(TenantPermissionPolicies.NotificationsSend, policy => policy
                 .RequireAuthenticatedUser()
                 .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.NotificationsSend)));
+            options.AddPolicy(TenantPermissionPolicies.FilesRead, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.FilesRead)));
+            options.AddPolicy(TenantPermissionPolicies.FilesUpload, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.FilesUpload)));
         });
         builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
         builder.Services.AddAntiforgery(options =>
@@ -158,10 +166,21 @@ public static class ApiApplication
                     "CommonWebPlatform",
                     "notification-outbox");
         });
+        builder.Services.Configure<LocalTenantFileStorageOptions>(options =>
+        {
+            options.RootPath = builder.Configuration["Files:LocalStoragePath"]
+                ?? Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "CommonWebPlatform",
+                    "files");
+        });
         builder.Services.AddScoped<LocalNotificationOutbox>();
         builder.Services.AddScoped<INotificationDeliveryPort>(services => services.GetRequiredService<LocalNotificationOutbox>());
         builder.Services.AddScoped<INotificationOutboxReader>(services => services.GetRequiredService<LocalNotificationOutbox>());
         builder.Services.AddScoped<INotificationService, NotificationService>();
+        builder.Services.AddScoped<ITenantFileStorage, LocalTenantFileStorage>();
+        builder.Services.AddScoped<ITenantFileRepository, EfTenantFileRepository>();
+        builder.Services.AddScoped<ITenantFileService, TenantFileService>();
         builder.Services.AddScoped<IAuditRecordService, AuditRecordService>();
         builder.Services.AddScoped<ITenantSettingService, TenantSettingService>();
         builder.Services.AddScoped<ITenantMembershipRepository, EfTenantMembershipRepository>();
@@ -315,6 +334,7 @@ public static class ApiApplication
         app.MapAuditEndpoints();
         app.MapTenantSettingEndpoints();
         app.MapNotificationEndpoints();
+        app.MapTenantFileEndpoints();
 
         return app;
     }

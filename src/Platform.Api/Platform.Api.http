@@ -10,6 +10,7 @@ Accept: application/json
 @tenantId = 00000000-0000-0000-0000-000000000000
 @membershipId = 00000000-0000-0000-0000-000000000000
 @roleId = 00000000-0000-0000-0000-000000000000
+@fileId = 00000000-0000-0000-0000-000000000000
 @csrfToken = replace-with-request-token
 @authCookie = replace-with-CWP.Auth-cookie-value
 @antiForgeryCookie = replace-with-CWP.AntiForgery-cookie-value
@@ -149,5 +150,41 @@ DELETE {{Platform.Api_HostAddress}}/api/v1/tenant/memberships/{{membershipId}}/r
 X-Tenant-ID: {{tenantId}}
 X-CSRF-TOKEN: {{csrfToken}}
 Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/files
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/files/{{fileId}}
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/files/{{fileId}}/content
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+# Send multipart/form-data with a "file" field using the REST Client's file-upload support.
+POST {{Platform.Api_HostAddress}}/api/v1/tenant/files
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="sample.pdf"
+Content-Type: application/pdf
+
+< ./sample.pdf
+--WebAppBoundary--
 
 ###

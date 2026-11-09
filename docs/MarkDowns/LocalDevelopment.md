@@ -36,6 +36,10 @@ After signing in, send the active tenant ID in `X-Tenant-ID`. Member reads requi
 
 The [Platform.Api.http](../../src/Platform.Api/Platform.Api.http) file contains request templates for these endpoints. Replace its tenant, membership, role, cookie and token placeholders with values from an authorized local session.
 
+### Tenant file storage
+
+Files are uploaded to `POST /api/v1/tenant/files` as multipart form data with a `file` field. Only PDF, PNG and JPEG content with matching signatures is accepted, with a 10 MiB per-file maximum. Upload requires the `files.upload` permission, an active `X-Tenant-ID`, authenticated cookies and a fresh `X-CSRF-TOKEN`. `GET /api/v1/tenant/files`, `GET /api/v1/tenant/files/{fileId}`, and `GET /api/v1/tenant/files/{fileId}/content` require `files.read`; metadata and content lookups are scoped to the verified tenant. Existing roles with `roles.manage` receive both file permissions through the migration. The local adapter stores generated opaque names under `%LOCALAPPDATA%\CommonWebPlatform\files`, partitioned by tenant UUID. Configure a different storage root with `Files:LocalStoragePath`. Original file names are metadata only and are never used as storage paths. This local adapter is not intended as a production malware scanner or content-disarm service.
+
 Tenant audit records are available at `GET /api/v1/tenant/audit?skip=0&take=50` to members with the `audit.read` permission. Results are newest-first and restricted to the verified tenant; `take` is limited to 100. The audit feed records authentication outcomes, session revocation, member lifecycle and tenant role changes. Audit metadata is limited to non-secret operational details; failed login entries omit the submitted email and password.
 
 ### Local notifications

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Platform.Modules.Identity.Domain;
+using Platform.Modules.Files.Domain;
 using Platform.Modules.Tenancy.Domain;
 
 namespace Platform.Api.Data;
@@ -23,6 +24,8 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
 
     public DbSet<TenantSetting> TenantSettings => Set<TenantSetting>();
 
+    public DbSet<TenantFile> TenantFiles => Set<TenantFile>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -30,6 +33,7 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PlatformUser).Assembly);
         modelBuilder.ApplyConfiguration(new AuditRecordConfiguration());
         modelBuilder.ApplyConfiguration(new TenantSettingConfiguration());
+        modelBuilder.ApplyConfiguration(new TenantFileConfiguration());
         modelBuilder.Entity<TenantMembership>()
             .HasOne<PlatformUser>()
             .WithMany()
