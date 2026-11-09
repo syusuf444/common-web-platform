@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Api.Auditing;
 using Platform.Modules.Tenancy.Domain;
 
 namespace Platform.Api.Identity;
@@ -41,6 +42,7 @@ public static class TenantMemberManagementEndpointMappings
                 AddTenantMemberRequest request,
                 HttpContext context,
                 ITenantMemberManagementService service,
+                IAuditRecordService auditRecords,
                 CancellationToken cancellationToken) =>
             {
                 var errors = ValidateEmail(request);
@@ -74,6 +76,9 @@ public static class TenantMemberManagementEndpointMappings
                     });
                 }
 
+                await auditRecords.RecordAsync(
+                    new AuditEvent("tenant.member.added", "membership", member!.MembershipId.ToString()),
+                    cancellationToken);
                 return Results.Created($"/api/v1/tenant/members/{member!.MembershipId}", member);
             })
             .AddEndpointFilter(new AntiforgeryEndpointFilter())
@@ -93,6 +98,7 @@ public static class TenantMemberManagementEndpointMappings
                 UpdateTenantMembershipStatusRequest request,
                 HttpContext context,
                 ITenantMemberManagementService service,
+                IAuditRecordService auditRecords,
                 CancellationToken cancellationToken) =>
             {
                 if (!TryParseMembershipStatus(request.Status, out var status))
@@ -122,6 +128,23 @@ public static class TenantMemberManagementEndpointMappings
                 }
 
                 var member = await service.UpdateStatusAsync(membershipId, status, cancellationToken);
+                if (memberBeforeUpdate is not null
+                    && member is not null
+                    && !string.Equals(memberBeforeUpdate.Status, member.Status, StringComparison.Ordinal))
+                {
+                    await auditRecords.RecordAsync(
+                        new AuditEvent(
+                            "tenant.member.status_changed",
+                            "membership",
+                            membershipId.ToString(),
+                            Metadata: new Dictionary<string, string>
+                            {
+                                ["from"] = memberBeforeUpdate.Status,
+                                ["to"] = member.Status,
+                            }),
+                        cancellationToken);
+                }
+
                 return member is null ? Results.NotFound() : Results.Ok(member);
             })
             .AddEndpointFilter(new AntiforgeryEndpointFilter())

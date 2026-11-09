@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Api.Auditing;
 using Platform.Modules.Identity.Application;
 using Platform.Modules.Identity.Domain;
 
@@ -28,7 +29,9 @@ public static class IdentityEndpointMappings
                 RegisterRequest request,
                 HttpContext context,
                 UserManager<PlatformUser> users,
-                TimeProvider timeProvider) =>
+                TimeProvider timeProvider,
+                IAuditRecordService auditRecords,
+                CancellationToken cancellationToken) =>
             {
                 var errors = RegistrationRequestValidator.Validate(request);
                 if (errors.Count > 0)
@@ -60,6 +63,9 @@ public static class IdentityEndpointMappings
                         extensions: ErrorExtensions("registration_failed", context));
                 }
 
+                await auditRecords.RecordAsync(
+                    new AuditEvent("auth.account.registered", "user", user.Id.ToString(), user.Id),
+                    cancellationToken);
                 return Results.Created(
                     "/api/v1/auth/me",
                     new AuthenticatedUserResponse(user.Id, user.Email!, user.DisplayName));
@@ -76,7 +82,9 @@ public static class IdentityEndpointMappings
             LoginRequest request,
             HttpContext context,
             UserManager<PlatformUser> users,
-            SignInManager<PlatformUser> signInManager) =>
+            SignInManager<PlatformUser> signInManager,
+            IAuditRecordService auditRecords,
+            CancellationToken cancellationToken) =>
         {
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrEmpty(request.Password))
             {
@@ -89,13 +97,21 @@ public static class IdentityEndpointMappings
             var user = await users.FindByEmailAsync(request.Email.Trim());
             if (user is null || user.Status != "Active")
             {
+                await auditRecords.RecordAsync(new AuditEvent("auth.login.failed", "session"), cancellationToken);
                 return AuthenticationFailed(context);
             }
 
             var signIn = await signInManager.PasswordSignInAsync(user, request.Password, isPersistent: false, lockoutOnFailure: true);
-            return signIn.Succeeded
-                ? Results.Ok(new AuthenticatedUserResponse(user.Id, user.Email!, user.DisplayName))
-                : AuthenticationFailed(context);
+            if (signIn.Succeeded)
+            {
+                await auditRecords.RecordAsync(
+                    new AuditEvent("auth.login.succeeded", "user", user.Id.ToString(), user.Id),
+                    cancellationToken);
+                return Results.Ok(new AuthenticatedUserResponse(user.Id, user.Email!, user.DisplayName));
+            }
+
+            await auditRecords.RecordAsync(new AuditEvent("auth.login.failed", "session"), cancellationToken);
+            return AuthenticationFailed(context);
         })
             .AddEndpointFilter(new AntiforgeryEndpointFilter())
             .RequireRateLimiting("identity-login")
@@ -121,8 +137,15 @@ public static class IdentityEndpointMappings
             .Produces<AuthenticatedUserResponse>()
             .Produces(StatusCodes.Status401Unauthorized);
 
-        group.MapPost("/logout", async (SignInManager<PlatformUser> signInManager) =>
+        group.MapPost("/logout", async (
+            HttpContext context,
+            SignInManager<PlatformUser> signInManager,
+            IAuditRecordService auditRecords,
+            CancellationToken cancellationToken) =>
         {
+            await auditRecords.RecordAsync(
+                new AuditEvent("auth.logout", "session"),
+                cancellationToken);
             await signInManager.SignOutAsync();
             return Results.NoContent();
         })
@@ -133,7 +156,12 @@ public static class IdentityEndpointMappings
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized);
 
-        group.MapPost("/sessions/revoke-all", async (HttpContext context, UserManager<PlatformUser> users, SignInManager<PlatformUser> signInManager) =>
+        group.MapPost("/sessions/revoke-all", async (
+            HttpContext context,
+            UserManager<PlatformUser> users,
+            SignInManager<PlatformUser> signInManager,
+            IAuditRecordService auditRecords,
+            CancellationToken cancellationToken) =>
         {
             var user = await users.GetUserAsync(context.User);
             if (user is null)
@@ -142,6 +170,9 @@ public static class IdentityEndpointMappings
             }
 
             await users.UpdateSecurityStampAsync(user);
+            await auditRecords.RecordAsync(
+                new AuditEvent("auth.sessions.revoked", "user", user.Id.ToString(), user.Id),
+                cancellationToken);
             await signInManager.SignOutAsync();
             return Results.NoContent();
         })

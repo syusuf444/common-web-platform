@@ -83,6 +83,7 @@ public sealed class ApiContractTests(ApiFixture fixture) : IClassFixture<ApiFixt
         Assert.Contains(paths, path => path == "/api/v1/auth/me");
         Assert.Contains(paths, path => path == "/api/v1/tenant/roles");
         Assert.Contains(paths, path => path == "/api/v1/tenant/memberships");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/audit");
         Assert.Equal(HttpStatusCode.OK, uiResponse.StatusCode);
     }
 

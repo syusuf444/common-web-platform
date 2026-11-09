@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Platform.Api.Auditing;
 using Platform.Modules.Identity.Application;
 using Platform.Modules.Tenancy.Application;
 
@@ -32,6 +33,7 @@ public static class TenantAuthorizationEndpointMappings
             CreateTenantRoleRequest request,
             HttpContext context,
             TenantRoleService roles,
+            IAuditRecordService auditRecords,
             CancellationToken cancellationToken) =>
         {
             var errors = TenantRoleRequestValidator.Validate(request);
@@ -45,6 +47,16 @@ public static class TenantAuthorizationEndpointMappings
             }
 
             var role = await roles.CreateAsync(request, cancellationToken);
+            await auditRecords.RecordAsync(
+                new AuditEvent(
+                    "tenant.role.created",
+                    "tenant_role",
+                    role.Id.ToString(),
+                    Metadata: new Dictionary<string, string>
+                    {
+                        ["permissionCount"] = role.PermissionCodes.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    }),
+                cancellationToken);
             return Results.Created($"/api/v1/tenant/roles/{role.Id}", role);
         })
             .AddEndpointFilter(new AntiforgeryEndpointFilter())
@@ -60,10 +72,22 @@ public static class TenantAuthorizationEndpointMappings
             Guid membershipId,
             Guid roleId,
             TenantRoleService roles,
+            IAuditRecordService auditRecords,
             CancellationToken cancellationToken) =>
         {
-            var assigned = await roles.AssignAsync(membershipId, roleId, cancellationToken);
-            return assigned ? Results.NoContent() : Results.NotFound();
+            var assignmentResult = await roles.AssignAsync(membershipId, roleId, cancellationToken);
+            if (assignmentResult == TenantRoleAssignmentResult.Assigned)
+            {
+                await auditRecords.RecordAsync(
+                    new AuditEvent(
+                        "tenant.role.assigned",
+                        "membership_role",
+                        membershipId.ToString(),
+                        Metadata: new Dictionary<string, string> { ["roleId"] = roleId.ToString() }),
+                    cancellationToken);
+            }
+
+            return assignmentResult == TenantRoleAssignmentResult.NotFound ? Results.NotFound() : Results.NoContent();
         })
             .AddEndpointFilter(new AntiforgeryEndpointFilter())
             .WithName("AssignTenantRole")
@@ -78,9 +102,21 @@ public static class TenantAuthorizationEndpointMappings
             Guid membershipId,
             Guid roleId,
             TenantRoleService roles,
+            IAuditRecordService auditRecords,
             CancellationToken cancellationToken) =>
         {
             var removed = await roles.RemoveAsync(membershipId, roleId, cancellationToken);
+            if (removed)
+            {
+                await auditRecords.RecordAsync(
+                    new AuditEvent(
+                        "tenant.role.removed",
+                        "membership_role",
+                        membershipId.ToString(),
+                        Metadata: new Dictionary<string, string> { ["roleId"] = roleId.ToString() }),
+                    cancellationToken);
+            }
+
             return removed ? Results.NoContent() : Results.NotFound();
         })
             .AddEndpointFilter(new AntiforgeryEndpointFilter())

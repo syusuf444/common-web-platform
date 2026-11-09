@@ -15,6 +15,7 @@ public sealed class PermissionConfiguration : IEntityTypeConfiguration<Permissio
         builder.HasData(
             new Permission { Code = PermissionCodes.MembersRead, Description = "Read tenant members." },
             new Permission { Code = PermissionCodes.MembersManage, Description = "Manage tenant members." },
-            new Permission { Code = PermissionCodes.RolesManage, Description = "Manage tenant roles and assignments." });
+            new Permission { Code = PermissionCodes.RolesManage, Description = "Manage tenant roles and assignments." },
+            new Permission { Code = PermissionCodes.AuditRead, Description = "Read tenant security and administration audit records." });
     }
 }

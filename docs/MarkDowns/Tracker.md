@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-09
 
-Project Status: Authenticated admin shell and member management complete; awaiting review
+Project Status: Tenant audit logging complete; awaiting review
 
-Overall Completion: 50% (8 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 6 of 14)
+Overall Completion: 56% (9 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 7 of 14)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -43,7 +43,9 @@ Status: Complete
 - [x] Complete PLAT-001 with browser flow, accessibility and build/run comparison; record a proposed frontend recommendation.
 - [x] Accept the React/TypeScript frontend recommendation after user review.
 - [x] Complete PLAT-008 authenticated admin shell and member management; verify member lifecycle and role assignment.
-- [ ] After user review, begin PLAT-009 audit records for security and administration actions.
+- [x] After user review, begin PLAT-009 audit records for security and administration actions.
+- [x] Complete PLAT-009 with migration, security/admin event coverage, permission-controlled audit reads and verification.
+- [ ] After user review, begin PLAT-010 tenant settings module.
 
 ## Progress Update Format
 
@@ -112,3 +114,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-008 Done.
 - Verification: all 14 unit tests and 15 SQL Server/API integration tests passed; the new integration test covers member listing/detail, permission denial, registered/unknown/duplicate account handling, status changes, self-suspension rejection, cross-tenant IDs, and role assignment/removal. `dotnet format --verify-no-changes` passed; Release solution build succeeded with 0 warnings/errors; React production build and lint passed. Live `/health`, Swagger UI and OpenAPI returned 200 and OpenAPI listed the member and membership-status routes. The React preview is running at `http://localhost:5173`; the API is running at `http://localhost:5247`.
 - Next action: user review of PLAT-008. Do not start PLAT-009 until explicitly approved.
+
+### 2026-11-09 — PLAT-009 security and administration audit records
+
+- Outcome: added indexed append-only audit persistence, request correlation and actor/tenant attribution, and events for registration, successful/failed login, logout, session revocation, member add/status changes, and role create/assign/remove. Audit metadata is limited to operational details; failed login entries exclude the submitted email and password. Added paginated `GET /api/v1/tenant/audit`, restricted to the verified tenant and the dedicated `audit.read` permission. The migration grants `audit.read` to existing roles already holding `roles.manage`.
+- Task IDs: PLAT-009 Done.
+- Verification: all 14 unit tests and 16 SQL Server/API integration tests passed, including authorization denial, pagination, cross-tenant isolation, secret omission, and event coverage. `dotnet format --verify-no-changes` passed; Release build succeeded with 0 warnings/errors. Applied migration `20261109161919_AddTenantAuditRecords` to isolated LocalDB `CommonWebPlatformRun_20261109` without removing the demo data. Live health, Swagger UI and OpenAPI returned 200; unauthenticated audit access returned 401.
+- Next action: user review of PLAT-009. Do not start PLAT-010 until explicitly approved.

@@ -36,6 +36,8 @@ After signing in, send the active tenant ID in `X-Tenant-ID`. Member reads requi
 
 The [Platform.Api.http](../../src/Platform.Api/Platform.Api.http) file contains request templates for these endpoints. Replace its tenant, membership, role, cookie and token placeholders with values from an authorized local session.
 
+Tenant audit records are available at `GET /api/v1/tenant/audit?skip=0&take=50` to members with the `audit.read` permission. Results are newest-first and restricted to the verified tenant; `take` is limited to 100. The audit feed records authentication outcomes, session revocation, member lifecycle and tenant role changes. Audit metadata is limited to non-secret operational details; failed login entries omit the submitted email and password.
+
 Expose only local development ports by default. Compose is infrastructure convenience, not a requirement to containerize the application. Local email delivery is captured to console or a local sink. File storage uses a local adapter. No paid cloud service is needed for the initial workflow.
 
 ## Local Deployment Shape
@@ -84,4 +86,3 @@ Follow the mandatory coding and security requirements in [Rules.md](./Rules.md) 
 - Docs and `Tracker.md` are updated; decision changes are recorded.
 
 Keep CI free-tier compatible when introduced: restore, build, unit/integration tests and frontend checks. Do not make external paid services a test prerequisite.
-

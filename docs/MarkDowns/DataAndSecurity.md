@@ -34,6 +34,8 @@ Platform-operator data and tenant data have distinct authorization paths. Cross-
 - Require authorization by default; anonymous endpoints are explicit allow-listed exceptions.
 - Scope all tenant resource access by active tenant and verify object-level authorization.
 - Evaluate tenant permissions from the active membership's assigned tenant roles on each request; role and membership IDs are always scoped by the verified tenant.
+- Append security and administration events to the audit log with actor, tenant, action, target, UTC time and request correlation ID; audit metadata is limited to non-secret operational details.
+- Require the dedicated `audit.read` tenant permission for the paginated audit endpoint; the migration grants it to existing roles that already have `roles.manage`. Audit records have no API update or delete operation.
 - Make retryable writes idempotent where duplicate execution would cause harm.
 
 ## Security Baseline
@@ -42,6 +44,7 @@ Platform-operator data and tenant data have distinct authorization paths. Cross-
 - Browser sessions use the `CWP.Auth` HTTP-only, SameSite=Strict cookie with a 30-minute fixed lifetime and no sliding renewal. Production cookies require HTTPS. Security stamps are checked on every authenticated request, allowing password/account security changes and revoke-all to invalidate existing sessions immediately; logout clears the current cookie.
 - Cookie-authenticated state-changing identity routes require an antiforgery request token in `X-CSRF-TOKEN`, paired with the HTTP-only `CWP.AntiForgery` cookie. Obtain a fresh request token after sign-in because tokens are bound to the current identity.
 - Login uses a generic failure response, Identity lockout after repeated failed attempts, and a per-IP request limit. Do not log credentials, cookies, antiforgery tokens or password hashes.
+- Audit successful/failed login, registration, logout, session revocation, member lifecycle and tenant role changes. Failed login audit records omit submitted email and password; tenant audit readers cannot read other tenants' rows.
 - Enforce least privilege, deny by default, and check permissions server-side on every operation.
 - Configure CORS narrowly.
 - Validate and encode input/output; use parameterized ORM queries; apply upload limits and content validation.
@@ -49,5 +52,3 @@ Platform-operator data and tenant data have distinct authorization paths. Cross-
 - Rate-limit authentication and sensitive endpoints; use generic login errors and audit security events without logging credentials/tokens.
 - Apply migrations deliberately; back up local data before destructive schema changes.
 - Add automated tests proving tenant A cannot read, mutate, delete or infer tenant B records, including by guessed IDs and list/filter/export paths.
-
-

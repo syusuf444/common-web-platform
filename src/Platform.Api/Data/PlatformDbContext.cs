@@ -19,11 +19,14 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
 
     public DbSet<MembershipRole> MembershipRoles => Set<MembershipRole>();
 
+    public DbSet<AuditRecord> AuditRecords => Set<AuditRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(Tenant).Assembly);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PlatformUser).Assembly);
+        modelBuilder.ApplyConfiguration(new AuditRecordConfiguration());
         modelBuilder.Entity<TenantMembership>()
             .HasOne<PlatformUser>()
             .WithMany()

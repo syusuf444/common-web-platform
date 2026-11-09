@@ -86,6 +86,54 @@ namespace Platform.Api.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Platform.Api.Data.AuditRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ResourceId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("TenantId", "OccurredAtUtc");
+
+                    b.ToTable("AuditRecords", "platform");
+                });
+
             modelBuilder.Entity("Platform.Modules.Identity.Domain.MembershipRole", b =>
                 {
                     b.Property<Guid>("TenantId")
@@ -137,6 +185,11 @@ namespace Platform.Api.Data.Migrations
                         {
                             Code = "roles.manage",
                             Description = "Manage tenant roles and assignments."
+                        },
+                        new
+                        {
+                            Code = "audit.read",
+                            Description = "Read tenant security and administration audit records."
                         });
                 });
 

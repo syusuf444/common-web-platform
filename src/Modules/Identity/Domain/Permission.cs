@@ -12,6 +12,7 @@ public static class PermissionCodes
     public const string MembersRead = "members.read";
     public const string MembersManage = "members.manage";
     public const string RolesManage = "roles.manage";
+    public const string AuditRead = "audit.read";
 
-    public static IReadOnlyList<string> All { get; } = [MembersRead, MembersManage, RolesManage];
+    public static IReadOnlyList<string> All { get; } = [MembersRead, MembersManage, RolesManage, AuditRead];
 }

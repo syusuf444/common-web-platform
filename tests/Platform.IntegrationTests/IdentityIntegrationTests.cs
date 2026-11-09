@@ -65,6 +65,25 @@ public sealed class IdentityIntegrationTests(ApiFixture fixture) : IClassFixture
         Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
         using var afterLogout = await client.GetAsync("/api/v1/auth/me");
         Assert.Equal(HttpStatusCode.Unauthorized, afterLogout.StatusCode);
+
+        var correlations = new[]
+        {
+            (Response: register, Action: "auth.account.registered"),
+            (Response: login, Action: "auth.login.succeeded"),
+            (Response: logout, Action: "auth.logout"),
+        };
+        using var signedInBody = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
+        var signedInUserId = signedInBody.RootElement.GetProperty("id").GetGuid();
+        await using var auditScope = fixture.Services.CreateAsyncScope();
+        var database = auditScope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+        foreach (var (response, expectedAction) in correlations)
+        {
+            var correlationId = Assert.Single(response.Headers.GetValues("X-Correlation-ID"));
+            var record = await database.AuditRecords.SingleAsync(item => item.CorrelationId == correlationId);
+            Assert.Equal(expectedAction, record.Action);
+            Assert.Equal(signedInUserId, record.ActorUserId);
+            Assert.Null(record.MetadataJson);
+        }
     }
 
     [Fact]
@@ -91,6 +110,16 @@ public sealed class IdentityIntegrationTests(ApiFixture fixture) : IClassFixture
         using var failureBody = JsonDocument.Parse(await failedLogin.Content.ReadAsStringAsync());
         Assert.Equal("The email or password is incorrect.", failureBody.RootElement.GetProperty("title").GetString());
         Assert.Equal("authentication_failed", failureBody.RootElement.GetProperty("code").GetString());
+
+        var correlationId = Assert.Single(failedLogin.Headers.GetValues("X-Correlation-ID"));
+        await using var auditScope = fixture.Services.CreateAsyncScope();
+        var database = auditScope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+        var failedLoginAudit = await database.AuditRecords.SingleAsync(item => item.CorrelationId == correlationId);
+        Assert.Equal("auth.login.failed", failedLoginAudit.Action);
+        Assert.Equal("session", failedLoginAudit.ResourceType);
+        Assert.Null(failedLoginAudit.ResourceId);
+        Assert.Null(failedLoginAudit.ActorUserId);
+        Assert.Null(failedLoginAudit.MetadataJson);
     }
 
     [Fact]
@@ -127,6 +156,14 @@ public sealed class IdentityIntegrationTests(ApiFixture fixture) : IClassFixture
         Assert.Equal(HttpStatusCode.Unauthorized, me.StatusCode);
         using var secondMeAfterRevocation = await secondClient.GetAsync("/api/v1/auth/me");
         Assert.Equal(HttpStatusCode.Unauthorized, secondMeAfterRevocation.StatusCode);
+
+        var correlationId = Assert.Single(revoke.Headers.GetValues("X-Correlation-ID"));
+        await using var auditScope = fixture.Services.CreateAsyncScope();
+        var database = auditScope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+        var revokeAudit = await database.AuditRecords.SingleAsync(item => item.CorrelationId == correlationId);
+        Assert.Equal("auth.sessions.revoked", revokeAudit.Action);
+        Assert.Equal("user", revokeAudit.ResourceType);
+        Assert.Null(revokeAudit.MetadataJson);
     }
 
     [Fact]
@@ -425,6 +462,110 @@ public sealed class IdentityIntegrationTests(ApiFixture fixture) : IClassFixture
         readerClient.DefaultRequestHeaders.Add("X-Tenant-ID", scenario.TenantId.ToString());
         using var deniedList = await readerClient.GetAsync("/api/v1/tenant/members");
         Assert.Equal(HttpStatusCode.Forbidden, deniedList.StatusCode);
+
+        await using var auditScope = fixture.Services.CreateAsyncScope();
+        var auditDatabase = auditScope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+        var actions = await auditDatabase.AuditRecords
+            .Where(item => item.TenantId == scenario.TenantId && item.ActorUserId == scenario.UserId)
+            .Select(item => item.Action)
+            .ToListAsync();
+        Assert.Contains("tenant.member.added", actions);
+        Assert.Contains("tenant.member.status_changed", actions);
+        Assert.Contains("tenant.role.created", actions);
+        Assert.Contains("tenant.role.assigned", actions);
+        Assert.Contains("tenant.role.removed", actions);
+    }
+
+    [Fact]
+    public async Task TenantAuditIsAppendOnlyPermissionControlledPaginatedAndTenantScoped()
+    {
+        var scenario = await SeedAuthorizationScenarioAsync(fixture.Services);
+        using var client = fixture.CreateClient();
+        var token = await GetCsrfTokenAsync(client);
+        using var login = await PostJsonWithCsrfAsync(
+            client,
+            "/api/v1/auth/login",
+            new { email = scenario.UserEmail, password = scenario.Password },
+            token);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        client.DefaultRequestHeaders.Add("X-Tenant-ID", scenario.TenantId.ToString());
+
+        using var anonymousClient = fixture.CreateClient();
+        using var anonymousAudit = await anonymousClient.GetAsync("/api/v1/tenant/audit");
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymousAudit.StatusCode);
+
+        using var deniedAudit = await client.GetAsync("/api/v1/tenant/audit");
+        Assert.Equal(HttpStatusCode.Forbidden, deniedAudit.StatusCode);
+
+        foreach (var roleName in new[] { "Audit Test Reader", "Audit Test Reporter" })
+        {
+            token = await GetCsrfTokenAsync(client);
+            using var createRole = await PostJsonWithCsrfAsync(
+                client,
+                "/api/v1/tenant/roles",
+                new CreateTenantRoleRequest(roleName, [PermissionCodes.MembersRead]),
+                token,
+                scenario.TenantId);
+            Assert.Equal(HttpStatusCode.Created, createRole.StatusCode);
+        }
+
+        await using (var scope = fixture.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+            var managerRole = await database.TenantRoles.SingleAsync(
+                role => role.TenantId == scenario.TenantId && role.Name == "Role Manager");
+            database.TenantRolePermissions.Add(new TenantRolePermission
+            {
+                TenantId = scenario.TenantId,
+                RoleId = managerRole.Id,
+                PermissionCode = PermissionCodes.AuditRead,
+            });
+
+            var otherTenantId = await database.Memberships
+                .Where(membership => membership.Id == scenario.OtherTenantMembershipId)
+                .Select(membership => membership.TenantId)
+                .SingleAsync();
+            database.AuditRecords.Add(new AuditRecord
+            {
+                Id = Guid.NewGuid(),
+                TenantId = otherTenantId,
+                ActorUserId = Guid.NewGuid(),
+                Action = "tenant.role.created",
+                ResourceType = "tenant_role",
+                ResourceId = Guid.NewGuid().ToString(),
+                OccurredAtUtc = DateTimeOffset.UtcNow,
+                CorrelationId = Guid.NewGuid().ToString("N"),
+                MetadataJson = """{"permissionCount":"1"}""",
+            });
+            await database.SaveChangesAsync();
+        }
+
+        using var invalidPage = await client.GetAsync("/api/v1/tenant/audit?skip=0&take=101");
+        Assert.Equal(HttpStatusCode.BadRequest, invalidPage.StatusCode);
+
+        using var firstPage = await client.GetAsync("/api/v1/tenant/audit?skip=0&take=1");
+        Assert.Equal(HttpStatusCode.OK, firstPage.StatusCode);
+        using var firstBody = JsonDocument.Parse(await firstPage.Content.ReadAsStringAsync());
+        var firstItem = Assert.Single(firstBody.RootElement.GetProperty("items").EnumerateArray());
+        Assert.Equal(scenario.TenantId, firstItem.GetProperty("tenantId").GetGuid());
+        Assert.Equal("tenant.role.created", firstItem.GetProperty("action").GetString());
+        Assert.Equal(scenario.UserId, firstItem.GetProperty("actorUserId").GetGuid());
+        Assert.True(firstBody.RootElement.GetProperty("hasMore").GetBoolean());
+        Assert.False(firstItem.GetProperty("metadataJson").GetString()!.Contains("password", StringComparison.OrdinalIgnoreCase));
+
+        using var secondPage = await client.GetAsync("/api/v1/tenant/audit?skip=1&take=1");
+        Assert.Equal(HttpStatusCode.OK, secondPage.StatusCode);
+        using var secondBody = JsonDocument.Parse(await secondPage.Content.ReadAsStringAsync());
+        var secondItem = Assert.Single(secondBody.RootElement.GetProperty("items").EnumerateArray());
+        Assert.Equal(scenario.TenantId, secondItem.GetProperty("tenantId").GetGuid());
+        Assert.False(secondBody.RootElement.GetProperty("hasMore").GetBoolean());
+
+        using var correlationRecords = await client.GetAsync($"/api/v1/tenant/audit?skip=0&take=100");
+        using var allBody = JsonDocument.Parse(await correlationRecords.Content.ReadAsStringAsync());
+        Assert.Equal(2, allBody.RootElement.GetProperty("items").GetArrayLength());
+        Assert.All(
+            allBody.RootElement.GetProperty("items").EnumerateArray(),
+            item => Assert.True(Guid.TryParseExact(item.GetProperty("correlationId").GetString(), "N", out _)));
     }
 
     private static async Task<string> GetCsrfTokenAsync(HttpClient client)
@@ -518,6 +659,7 @@ public sealed class IdentityIntegrationTests(ApiFixture fixture) : IClassFixture
 
         return new AuthorizationScenario(
             tenant.Id,
+            user.Id,
             membership.Id,
             otherTenantMembership.Id,
             otherTenantRole.Id,
@@ -551,6 +693,7 @@ public sealed class IdentityIntegrationTests(ApiFixture fixture) : IClassFixture
 
     private sealed record AuthorizationScenario(
         Guid TenantId,
+        Guid UserId,
         Guid MembershipId,
         Guid OtherTenantMembershipId,
         Guid OtherTenantRoleId,

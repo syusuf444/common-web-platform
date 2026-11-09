@@ -54,7 +54,7 @@ public sealed class EfTenantRoleRepository(PlatformDbContext database) : ITenant
         return new TenantRoleSummary(role.Id, role.Name, role.IsSystem, permissionCodes);
     }
 
-    public async Task<bool> AssignAsync(Guid tenantId, Guid membershipId, Guid roleId, DateTimeOffset assignedAtUtc, CancellationToken cancellationToken = default)
+    public async Task<TenantRoleAssignmentResult> AssignAsync(Guid tenantId, Guid membershipId, Guid roleId, DateTimeOffset assignedAtUtc, CancellationToken cancellationToken = default)
     {
         var membershipExists = await database.Memberships.AsNoTracking().AnyAsync(
             membership => membership.TenantId == tenantId
@@ -66,14 +66,14 @@ public sealed class EfTenantRoleRepository(PlatformDbContext database) : ITenant
             cancellationToken);
         if (!membershipExists || !roleExists)
         {
-            return false;
+            return TenantRoleAssignmentResult.NotFound;
         }
 
         if (await database.MembershipRoles.AnyAsync(
                 item => item.TenantId == tenantId && item.MembershipId == membershipId && item.RoleId == roleId,
                 cancellationToken))
         {
-            return true;
+            return TenantRoleAssignmentResult.AlreadyAssigned;
         }
 
         var assignment = new MembershipRole
@@ -85,7 +85,7 @@ public sealed class EfTenantRoleRepository(PlatformDbContext database) : ITenant
         };
         database.MembershipRoles.Add(assignment);
         await database.SaveChangesAsync(cancellationToken);
-        return true;
+        return TenantRoleAssignmentResult.Assigned;
     }
 
     public async Task<bool> RemoveAsync(Guid tenantId, Guid membershipId, Guid roleId, CancellationToken cancellationToken = default)

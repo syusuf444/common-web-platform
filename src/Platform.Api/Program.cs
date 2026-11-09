@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Api;
+using Platform.Api.Auditing;
 using Platform.Api.Data;
 using Platform.Api.Identity;
 using Platform.Modules.Identity.Application;
@@ -104,6 +105,9 @@ public static class ApiApplication
             options.AddPolicy(TenantPermissionPolicies.RolesManage, policy => policy
                 .RequireAuthenticatedUser()
                 .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.RolesManage)));
+            options.AddPolicy(TenantPermissionPolicies.AuditRead, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.AuditRead)));
         });
         builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
         builder.Services.AddAntiforgery(options =>
@@ -130,6 +134,8 @@ public static class ApiApplication
                 }));
         });
         builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<IAuditRecordService, AuditRecordService>();
         builder.Services.AddScoped<ITenantMembershipRepository, EfTenantMembershipRepository>();
         builder.Services.AddScoped<ITenantRoleRepository, EfTenantRoleRepository>();
         builder.Services.AddScoped<ITenantMemberManagementService, TenantMemberManagementService>();
@@ -278,6 +284,7 @@ public static class ApiApplication
         app.MapIdentityEndpoints(app.Environment.IsDevelopment());
         app.MapTenantAuthorizationEndpoints();
         app.MapTenantMemberManagementEndpoints();
+        app.MapAuditEndpoints();
 
         return app;
     }

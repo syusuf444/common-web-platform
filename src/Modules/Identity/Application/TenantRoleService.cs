@@ -9,7 +9,7 @@ public interface ITenantRoleRepository
 
     Task<TenantRoleSummary> CreateAsync(Guid tenantId, string name, IReadOnlyList<string> permissionCodes, DateTimeOffset createdAtUtc, CancellationToken cancellationToken = default);
 
-    Task<bool> AssignAsync(Guid tenantId, Guid membershipId, Guid roleId, DateTimeOffset assignedAtUtc, CancellationToken cancellationToken = default);
+    Task<TenantRoleAssignmentResult> AssignAsync(Guid tenantId, Guid membershipId, Guid roleId, DateTimeOffset assignedAtUtc, CancellationToken cancellationToken = default);
 
     Task<bool> RemoveAsync(Guid tenantId, Guid membershipId, Guid roleId, CancellationToken cancellationToken = default);
 
@@ -39,7 +39,7 @@ public sealed class TenantRoleService(
         return roles.CreateAsync(context.TenantId, name, permissionCodes, timeProvider.GetUtcNow(), cancellationToken);
     }
 
-    public Task<bool> AssignAsync(Guid membershipId, Guid roleId, CancellationToken cancellationToken = default)
+    public Task<TenantRoleAssignmentResult> AssignAsync(Guid membershipId, Guid roleId, CancellationToken cancellationToken = default)
     {
         var context = tenantContext.RequireCurrent();
         return roles.AssignAsync(context.TenantId, membershipId, roleId, timeProvider.GetUtcNow(), cancellationToken);
