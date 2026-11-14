@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +14,12 @@ using Platform.Api.Identity;
 using Platform.Api.Notifications;
 using Platform.Api.Reporting;
 using Platform.Api.Settings;
+using Platform.Api.Webhooks;
 using Platform.Modules.Identity.Application;
 using Platform.Modules.Identity.Domain;
 using Platform.Modules.Notifications.Application;
 using Platform.Modules.Files.Application;
+using Platform.Modules.Webhooks.Application;
 using Platform.Modules.Tenancy.Application;
 
 var app = ApiApplication.Build(args);
@@ -40,6 +43,7 @@ public static class ApiApplication
         }
 
         builder.Services.AddOpenApi();
+        builder.Services.AddDataProtection().SetApplicationName("CommonWebPlatform");
         var connectionString = builder.Configuration.GetConnectionString("PlatformDb")
             ?? (builder.Environment.IsDevelopment()
                 ? "Server=(localdb)\\MSSQLLocalDB;Database=CommonWebPlatform;Integrated Security=True;TrustServerCertificate=True"
@@ -138,6 +142,12 @@ public static class ApiApplication
             options.AddPolicy(TenantPermissionPolicies.ReportsExport, policy => policy
                 .RequireAuthenticatedUser()
                 .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.ReportsExport)));
+            options.AddPolicy(TenantPermissionPolicies.WebhooksRead, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.WebhooksRead)));
+            options.AddPolicy(TenantPermissionPolicies.WebhooksManage, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.WebhooksManage)));
         });
         builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
         builder.Services.AddAntiforgery(options =>
@@ -181,6 +191,12 @@ public static class ApiApplication
                     "CommonWebPlatform",
                     "files");
         });
+        builder.Services.Configure<WebhookDeliveryOptions>(builder.Configuration.GetSection("Webhooks"));
+        builder.Services.AddSingleton<WebhookEndpointPolicy>();
+        builder.Services.AddHttpClient(WebhookHttpClientNames.Delivery)
+            .ConfigurePrimaryHttpMessageHandler(services =>
+                WebhookHttpClientFactory.CreateHandler(services.GetRequiredService<WebhookEndpointPolicy>()))
+            .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(10));
         builder.Services.AddScoped<LocalNotificationOutbox>();
         builder.Services.AddScoped<INotificationDeliveryPort>(services => services.GetRequiredService<LocalNotificationOutbox>());
         builder.Services.AddScoped<INotificationOutboxReader>(services => services.GetRequiredService<LocalNotificationOutbox>());
@@ -188,6 +204,15 @@ public static class ApiApplication
         builder.Services.AddScoped<ITenantFileStorage, LocalTenantFileStorage>();
         builder.Services.AddScoped<ITenantFileRepository, EfTenantFileRepository>();
         builder.Services.AddScoped<ITenantFileService, TenantFileService>();
+        builder.Services.AddScoped<IWebhookStore, EfWebhookStore>();
+        builder.Services.AddScoped<IWebhookService, WebhookService>();
+        builder.Services.AddScoped<IWebhookPublisher>(services => services.GetRequiredService<IWebhookService>());
+        builder.Services.AddScoped<IWebhookDeliveryTransport, WebhookDeliveryTransport>();
+        builder.Services.AddScoped<IWebhookDeliveryProcessor, WebhookDeliveryProcessor>();
+        if (builder.Configuration.GetValue<bool?>("Webhooks:BackgroundWorkerEnabled") ?? true)
+        {
+            builder.Services.AddHostedService<WebhookDeliveryWorker>();
+        }
         builder.Services.AddScoped<IAuditRecordService, AuditRecordService>();
         builder.Services.AddScoped<ITenantReportingQueries, EfTenantReportingQueries>();
         builder.Services.AddScoped<ITenantSettingService, TenantSettingService>();
@@ -341,6 +366,7 @@ public static class ApiApplication
         app.MapTenantMemberManagementEndpoints();
         app.MapAuditEndpoints();
         app.MapTenantReportingEndpoints();
+        app.MapWebhookEndpoints();
         app.MapTenantSettingEndpoints();
         app.MapNotificationEndpoints();
         app.MapTenantFileEndpoints();

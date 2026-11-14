@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-14
 
-Project Status: PLAT-013 tenant dashboard and reporting complete; awaiting user review
+Project Status: PLAT-014 webhook/integration foundation complete; awaiting user review
 
-Overall Completion: 81% (13 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 11 of 14)
+Overall Completion: 88% (14 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 12 of 14)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -53,6 +53,8 @@ Status: Complete
 - [x] Complete PLAT-012 with tenant-scoped upload/download, size/type checks, safe local storage and verification.
 - [x] After user review, begin PLAT-013 tenant dashboard and reporting foundation.
 - [x] Complete PLAT-013 with tenant-scoped dashboard metrics, paginated reports, export authorization and verification.
+- [x] After user review, begin PLAT-014 webhook/integration foundation.
+- [x] Complete PLAT-014 with permission-controlled subscriptions, signed/retried delivery, auditable attempts and operator/consumer documentation.
 
 ## Progress Update Format
 
@@ -156,3 +158,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-013 Done.
 - Verification: all 14 unit tests and 23 SQL Server/API integration tests passed; the integration test covers dashboard counts, tenant isolation, reader/export permission separation, report pagination, bounded export, metadata omission, CSV content and spreadsheet formula neutralization. OpenAPI includes all reporting routes. Release solution test/build passed; `dotnet format --verify-no-changes` and `git diff --check` passed. Tests applied migrations to isolated databases; the Demo Client database was not modified.
 - Next action: user review of PLAT-013. Do not start PLAT-014 until explicitly approved.
+
+### 2026-11-14 — PLAT-014 webhook/integration foundation
+
+- Outcome: added tenant-scoped webhook subscriptions and delivery history with separate read/manage permissions, one-time Data Protection-protected signing secrets, HMAC-SHA256 signed POST requests, allowlisted outbound destinations, redirect blocking, bounded exponential retries, and persisted per-attempt outcomes. Expired final-attempt leases are marked failed rather than left permanently processing. Added API request examples and documentation for destination configuration, signature verification, retries, event publication, and Data Protection key-ring handling.
+- Task IDs: PLAT-014 Done.
+- Verification: all 14 unit tests and 26 SQL Server/API integration tests passed, including authorization, tenant isolation, one-time secret protection, signature verification, retry/attempt persistence, invalid-event rejection, OpenAPI coverage, and expired-lease recovery. Release solution tests/build passed; `dotnet format --verify-no-changes` and `git diff --check` passed. Tests used isolated databases; the Demo Client database was not modified.
+- Next action: user review of PLAT-014. Do not start PLAT-015 until explicitly approved.

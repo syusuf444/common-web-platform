@@ -50,6 +50,18 @@ Tenant audit records are available at `GET /api/v1/tenant/audit?skip=0&take=50` 
 
 Tenant notifications can be written to and inspected in a local JSON outbox. `POST /api/v1/tenant/notifications` requires `notifications.send`, a valid tenant context, an antiforgery token, and a recipient, subject and plain-text body. `GET /api/v1/tenant/notifications?take=50` and `GET /api/v1/tenant/notifications/{notificationId}` require `notifications.read`. The new permissions are initially granted to existing roles that already have `roles.manage`. The default outbox is `%LOCALAPPDATA%\CommonWebPlatform\notification-outbox`, partitioned by tenant UUID. Override it with `Notifications:LocalOutboxPath` in local configuration. The adapter does not send email or contact a third party; failures are logged and returned as API errors. Avoid including secrets or sensitive personal data in demo messages.
 
+### Tenant webhooks
+
+Webhook subscription and delivery-history routes are in `Platform.Api.http`. Subscription management (`POST` and `DELETE /api/v1/tenant/webhooks/subscriptions`) requires `webhooks.manage`; listing subscriptions, reading a subscription and listing paginated deliveries with their attempts require `webhooks.read`. State-changing requests need the same authenticated cookies and antiforgery token as other tenant writes. The migration grants both permissions to existing tenant roles that already have `roles.manage`.
+
+Before creating a subscription, configure an exact hostname in `Webhooks:AllowedHosts` (for example `Webhooks__AllowedHosts__0=hooks.example.com`). Endpoints must use HTTPS outside Development. Development permits HTTP only for loopback destinations; all destinations still require an allowlisted host. DNS results are checked before connecting, private/non-routable addresses are rejected, and redirects are disabled. Keep this allowlist controlled by the platform operator, not tenant input.
+
+The generated signing secret is returned once and stored protected with ASP.NET Core Data Protection. Keep the Data Protection key ring persistent and backed up under the same application name (`CommonWebPlatform`); replicas must use the same protected key ring. Losing the key ring makes existing webhook secrets unreadable. Never include the one-time secret in logs or source control.
+
+Each delivery is an HTTP POST with JSON content and `X-CWP-Webhook-Id`, `X-CWP-Webhook-Event`, `X-CWP-Webhook-Timestamp`, and `X-CWP-Webhook-Signature` headers. The signature is `v1=` followed by lowercase hexadecimal HMAC-SHA256 over the UTF-8 bytes of `<timestamp>.<raw request body>`, using the one-time Base64URL secret decoded to bytes. Consumers should compare signatures in constant time, reject stale timestamps, and deduplicate by delivery ID because retries reuse that ID. A request times out after 10 seconds; HTTP 408, 429, 5xx and network/timeouts retry with exponential delay, up to five attempts. Every completed attempt and its result is available from the tenant-scoped delivery-history endpoint.
+
+Events are published internally through `IWebhookPublisher`; there is no public endpoint for tenants to inject arbitrary events. A producer module must explicitly publish an event for matching active subscriptions to receive deliveries. The default allowlist is empty, so outbound delivery remains unavailable until an operator configures a host.
+
 Expose only local development ports by default. Compose is infrastructure convenience, not a requirement to containerize the application. Notification requests are captured in the local outbox and do not send email. File storage uses a local adapter. No paid cloud service is needed for the initial workflow.
 
 ## Local Deployment Shape

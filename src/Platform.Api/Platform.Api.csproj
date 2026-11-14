@@ -11,6 +11,7 @@
     <ProjectReference Include="..\Modules\Identity\Platform.Modules.Identity.csproj" />
     <ProjectReference Include="..\Modules\Notifications\Platform.Modules.Notifications.csproj" />
     <ProjectReference Include="..\Modules\Files\Platform.Modules.Files.csproj" />
+    <ProjectReference Include="..\Modules\Webhooks\Platform.Modules.Webhooks.csproj" />
   </ItemGroup>
 
   <ItemGroup>

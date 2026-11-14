@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Platform.Modules.Identity.Domain;
 using Platform.Modules.Files.Domain;
 using Platform.Modules.Tenancy.Domain;
+using Platform.Modules.Webhooks.Domain;
 
 namespace Platform.Api.Data;
 
@@ -26,6 +27,12 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
 
     public DbSet<TenantFile> TenantFiles => Set<TenantFile>();
 
+    public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
+
+    public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
+
+    public DbSet<WebhookDeliveryAttempt> WebhookDeliveryAttempts => Set<WebhookDeliveryAttempt>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -34,6 +41,9 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
         modelBuilder.ApplyConfiguration(new AuditRecordConfiguration());
         modelBuilder.ApplyConfiguration(new TenantSettingConfiguration());
         modelBuilder.ApplyConfiguration(new TenantFileConfiguration());
+        modelBuilder.ApplyConfiguration(new WebhookSubscriptionConfiguration());
+        modelBuilder.ApplyConfiguration(new WebhookDeliveryConfiguration());
+        modelBuilder.ApplyConfiguration(new WebhookDeliveryAttemptConfiguration());
         modelBuilder.Entity<TenantMembership>()
             .HasOne<PlatformUser>()
             .WithMany()

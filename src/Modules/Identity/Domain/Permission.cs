@@ -21,6 +21,8 @@ public static class PermissionCodes
     public const string FilesUpload = "files.upload";
     public const string ReportsRead = "reports.read";
     public const string ReportsExport = "reports.export";
+    public const string WebhooksRead = "webhooks.read";
+    public const string WebhooksManage = "webhooks.manage";
 
     public static IReadOnlyList<string> All { get; } =
         [
@@ -36,5 +38,7 @@ public static class PermissionCodes
             FilesUpload,
             ReportsRead,
             ReportsExport,
+            WebhooksRead,
+            WebhooksManage,
         ];
 }

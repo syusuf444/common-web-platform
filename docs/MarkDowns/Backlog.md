@@ -17,7 +17,7 @@ Status values: `Not Started`, `In Progress`, `Blocked`, `Done`. Priority: `P0` r
 | PLAT-011 | P1 | Add notification module with local delivery adapter | Done | PLAT-010 | Domain module can request notification via contract; local delivery visible without third-party account; failures are observable. |
 | PLAT-012 | P1 | Add file metadata and local storage adapter | Done | PLAT-005 | Upload/download is tenant and object authorized, size/type limited, metadata persisted and storage path cannot escape configured root. |
 | PLAT-013 | P2 | Add tenant-scoped dashboard and reporting foundation | Done | PLAT-009 | Reports query through supported interfaces; pagination/export permissions and tenant isolation covered. |
-| PLAT-014 | P2 | Add webhook/integration foundation | Not Started | PLAT-011 | Subscriptions are permission-controlled; delivery signed, retried safely and attempts auditable. |
+| PLAT-014 | P2 | Add webhook/integration foundation | Done | PLAT-011 | Subscriptions are permission-controlled; delivery signed, retried safely and attempts auditable. |
 | PLAT-015 | P2 | Add workflow/approval module for a validated use case | Not Started | PLAT-007 | One real workflow has explicit states, authorization and audit; no generic workflow engine without evidence. |
 | PLAT-016 | P3 | SaaS deployment, billing and operator controls discovery | Not Started | PLAT-013 | Client demand, hosting, tenant lifecycle, billing and operational/security requirements documented before implementation. |
 

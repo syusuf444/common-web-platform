@@ -94,6 +94,9 @@ public sealed class ApiContractTests(ApiFixture fixture) : IClassFixture<ApiFixt
         Assert.Contains(paths, path => path == "/api/v1/tenant/dashboard");
         Assert.Contains(paths, path => path == "/api/v1/tenant/reports/audit");
         Assert.Contains(paths, path => path == "/api/v1/tenant/reports/audit/export.csv");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/webhooks/subscriptions");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/webhooks/subscriptions/{subscriptionId}");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/webhooks/deliveries");
         var upload = document.RootElement
             .GetProperty("paths")
             .GetProperty("/api/v1/tenant/files")
@@ -142,6 +145,9 @@ public sealed class ApiFixture : IAsyncLifetime
                 $"--ConnectionStrings:PlatformDb={_isolatedConnectionString}",
                 $"--Notifications:LocalOutboxPath={_isolatedNotificationOutboxPath}",
                 $"--Files:LocalStoragePath={_isolatedFileStoragePath}",
+                "--Webhooks:AllowedHosts:0=127.0.0.1",
+                "--Webhooks:AllowedHosts:1=localhost",
+                "--Webhooks:InitialRetryDelaySeconds=0.01",
             ],
             "Development",
             "http://127.0.0.1:0");

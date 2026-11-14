@@ -11,6 +11,8 @@ Accept: application/json
 @membershipId = 00000000-0000-0000-0000-000000000000
 @roleId = 00000000-0000-0000-0000-000000000000
 @fileId = 00000000-0000-0000-0000-000000000000
+@webhookSubscriptionId = 00000000-0000-0000-0000-000000000000
+@webhookEndpoint = https://your-allowlisted-host.example/webhooks
 @csrfToken = replace-with-request-token
 @authCookie = replace-with-CWP.Auth-cookie-value
 @antiForgeryCookie = replace-with-CWP.AntiForgery-cookie-value
@@ -206,5 +208,47 @@ Content-Type: application/pdf
 
 < ./sample.pdf
 --WebAppBoundary--
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/webhooks/subscriptions
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+POST {{Platform.Api_HostAddress}}/api/v1/tenant/webhooks/subscriptions
+Accept: application/json
+Content-Type: application/json
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+{
+  "eventType": "tenant.member.added",
+  "endpointUrl": "{{webhookEndpoint}}"
+}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/webhooks/subscriptions/{{webhookSubscriptionId}}
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/webhooks/deliveries?skip=0&take=50
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+DELETE {{Platform.Api_HostAddress}}/api/v1/tenant/webhooks/subscriptions/{{webhookSubscriptionId}}
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
 
 ###

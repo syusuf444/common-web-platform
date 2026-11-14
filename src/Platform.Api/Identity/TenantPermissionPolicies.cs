@@ -14,4 +14,6 @@ public static class TenantPermissionPolicies
     public const string FilesUpload = "tenant.files.upload";
     public const string ReportsRead = "tenant.reports.read";
     public const string ReportsExport = "tenant.reports.export";
+    public const string WebhooksRead = "tenant.webhooks.read";
+    public const string WebhooksManage = "tenant.webhooks.manage";
 }

@@ -289,6 +289,16 @@ namespace Platform.Api.Data.Migrations
                         {
                             Code = "reports.export",
                             Description = "Export tenant report data."
+                        },
+                        new
+                        {
+                            Code = "webhooks.read",
+                            Description = "Read tenant webhook subscriptions and delivery attempts."
+                        },
+                        new
+                        {
+                            Code = "webhooks.manage",
+                            Description = "Create and disable tenant webhook subscriptions."
                         });
                 });
 
@@ -480,6 +490,141 @@ namespace Platform.Api.Data.Migrations
                     b.ToTable("Memberships", "platform");
                 });
 
+            modelBuilder.Entity("Platform.Modules.Webhooks.Domain.WebhookDelivery", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int?>("LastStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("NextAttemptAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("TenantId", "Id");
+
+                    b.HasIndex("TenantId", "CreatedAtUtc");
+
+                    b.HasIndex("TenantId", "SubscriptionId");
+
+                    b.HasIndex("Status", "NextAttemptAtUtc", "LeaseExpiresAtUtc");
+
+                    b.ToTable("WebhookDeliveries", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Modules.Webhooks.Domain.WebhookDeliveryAttempt", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("DeliveryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int?>("HttpStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("StartedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("Succeeded")
+                        .HasColumnType("bit");
+
+                    b.HasKey("TenantId", "Id");
+
+                    b.HasIndex("TenantId", "DeliveryId", "AttemptNumber")
+                        .IsUnique();
+
+                    b.ToTable("WebhookDeliveryAttempts", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Modules.Webhooks.Domain.WebhookSubscription", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("DisabledAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("EndpointUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ProtectedSigningSecret")
+                        .IsRequired()
+                        .HasMaxLength(4096)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("TenantId", "Id");
+
+                    b.HasIndex("TenantId", "EventType", "IsActive");
+
+                    b.ToTable("WebhookSubscriptions", "platform");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
                     b.HasOne("Platform.Modules.Identity.Domain.PlatformUser", null)
@@ -579,6 +724,33 @@ namespace Platform.Api.Data.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Platform.Modules.Webhooks.Domain.WebhookDelivery", b =>
+                {
+                    b.HasOne("Platform.Modules.Webhooks.Domain.WebhookSubscription", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Platform.Modules.Webhooks.Domain.WebhookDeliveryAttempt", b =>
+                {
+                    b.HasOne("Platform.Modules.Webhooks.Domain.WebhookDelivery", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "DeliveryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Platform.Modules.Webhooks.Domain.WebhookSubscription", b =>
+                {
+                    b.HasOne("Platform.Modules.Tenancy.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 #pragma warning restore 612, 618
