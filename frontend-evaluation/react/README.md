@@ -1,6 +1,6 @@
 # React Evaluation Shell
 
-This is a local comparison prototype for the Common Web Platform sign-in and tenant-membership experience. It is not the production frontend; review the proposed frontend decision in [DecisionLog.md](../../docs/MarkDowns/DecisionLog.md) before starting PLAT-008.
+This is the local React demo shell for the Common Web Platform sign-in, tenant overview and member-management experience. It is not a production-ready frontend; review the frontend decision in [DecisionLog.md](../../docs/MarkDowns/DecisionLog.md) and the hosting gates in [SaaSReadinessDiscovery.md](../../docs/MarkDowns/SaaSReadinessDiscovery.md).
 
 ## Run locally
 
@@ -13,7 +13,7 @@ npm ci
 npm run dev -- --host localhost --port 5173 --strictPort
 ```
 
-Open `http://localhost:5173`. Development CORS permits this origin. The shell uses the API's cookie session and obtains antiforgery tokens for state-changing requests.
+Open `http://localhost:5173`. Development CORS permits this origin. The shell uses the API's cookie session and obtains antiforgery tokens for state-changing requests. After loading a tenant, it displays dashboard counts and recent audit activity when the signed-in user has the report-read permission. The API remains authoritative for tenant membership and authorization.
 
 ## Verify
 

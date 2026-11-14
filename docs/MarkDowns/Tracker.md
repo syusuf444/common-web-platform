@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-14
 
-Project Status: PLAT-017 no-cost demo-hosting feasibility complete; awaiting user review; no cloud resources deployed
+Project Status: PLAT-018 tenant dashboard added to the local React demo; awaiting user review; no cloud resources deployed
 
-Overall Completion: 100% (17 of 17 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 13 of 14; PLAT-016/017 are discovery tasks, not product implementation)
+Overall Completion: 100% (18 of 18 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 14 of 15; PLAT-016/017 are discovery tasks, not product implementation)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -61,6 +61,7 @@ Status: Complete
 - [x] Complete PLAT-016 discovery documentation; record unvalidated client demand and keep public hosting/billing implementation gated.
 - [x] After PLAT-016 review, assess a no-cost hosted demo candidate against the user's no-paid-services constraint.
 - [x] Complete PLAT-017 with verified free-tier constraints, cost safeguards, frontend/CORS blockers, and no deployment.
+- [x] Keep the application local after the user confirmed no Azure subscription; add a tenant overview to the React demo using existing dashboard and audit-report APIs.
 
 ## Progress Update Format
 
@@ -192,3 +193,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-017 Done (research/documentation only; no cloud account or resource created, no application code changed, and no customer data permitted).
 - Verification: checked the official [App Service plan documentation](https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans) and [Azure SQL free-tier documentation](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-tier?view=azuresql); inspected the API's Development-only credentialed CORS and current React evaluation project location. `git diff --check` passed. Build/tests were not applicable because no code changed.
 - Next action: user review. Before any deployment, confirm access to an Azure subscription and explicitly approve an isolated demo only after verifying that paid overages are disabled and all supporting resources remain within the no-cost constraint. No production/customer data.
+
+### 2026-11-14 — PLAT-018 tenant overview for the local React demo
+
+- Outcome: added tenant overview metrics (active/suspended members, stored files, and 30-day audit events) and a recent audit activity list to the existing signed-in React shell. Data is fetched from the existing tenant reporting APIs only after the user loads a tenant; report permission/API failures are displayed without removing the existing member management experience. Updated the React evaluation README.
+- Task IDs: PLAT-018 Done (local frontend only; no cloud resources or new backend behavior).
+- Verification: `npm run build` and `npm run lint` passed. Signed in through the local browser, loaded the existing Demo Client tenant, and verified the API-backed metric cards, recent audit activity, and member list rendered. `git diff --check` passed.
+- Next action: user review of PLAT-018. Continue local/demo-only; do not start a hosted deployment without an Azure subscription and explicit no-cost deployment approval.

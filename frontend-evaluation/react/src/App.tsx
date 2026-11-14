@@ -15,6 +15,21 @@ type Member = {
   joinedAtUtc: string
   roles: TenantMemberRole[]
 }
+type TenantDashboard = {
+  activeMembers: number
+  suspendedMembers: number
+  storedFiles: number
+  auditEventsLast30Days: number
+}
+type AuditReportItem = {
+  id: string
+  occurredAtUtc: string
+  action: string
+  resourceType: string
+  resourceId: string | null
+  actorUserId: string | null
+}
+type AuditReportPage = { items: AuditReportItem[]; hasMore: boolean }
 type Problem = { title?: string; errors?: Record<string, string[]> }
 type Csrf = { requestToken: string }
 
@@ -50,6 +65,10 @@ function App() {
   const [memberEmail, setMemberEmail] = useState('')
   const [members, setMembers] = useState<Member[]>([])
   const [roles, setRoles] = useState<TenantRole[]>([])
+  const [dashboard, setDashboard] = useState<TenantDashboard | null>(null)
+  const [recentAudit, setRecentAudit] = useState<AuditReportItem[]>([])
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportError, setReportError] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -96,6 +115,10 @@ function App() {
       setUser(null)
       setMembers([])
       setRoles([])
+      setDashboard(null)
+      setRecentAudit([])
+      setReportLoading(false)
+      setReportError('')
       setTenantId('')
       setTenantLoaded(false)
       setMessage('You have signed out.')
@@ -124,6 +147,7 @@ function App() {
       setMembers(memberResult)
       setRoles(roleResult)
       setTenantLoaded(true)
+      await loadReportingData(selectedTenantId)
       setMessage(`${memberResult.length} member${memberResult.length === 1 ? '' : 's'} loaded.`)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Tenant data could not be loaded.')
@@ -206,6 +230,27 @@ function App() {
     ])
     setMembers(memberResult)
     setRoles(roleResult)
+    await loadReportingData(tenantId.trim())
+  }
+
+  async function loadReportingData(selectedTenantId: string) {
+    setReportLoading(true)
+    setReportError('')
+    try {
+      const headers = { 'X-Tenant-ID': selectedTenantId }
+      const [dashboardResult, reportResult] = await Promise.all([
+        api<TenantDashboard>('/api/v1/tenant/dashboard', { headers }),
+        api<AuditReportPage>('/api/v1/tenant/reports/audit?skip=0&take=8', { headers }),
+      ])
+      setDashboard(dashboardResult)
+      setRecentAudit(reportResult.items)
+    } catch (reason) {
+      setDashboard(null)
+      setRecentAudit([])
+      setReportError(reason instanceof Error ? reason.message : 'Tenant reports could not be loaded.')
+    } finally {
+      setReportLoading(false)
+    }
   }
 
   return (
@@ -255,6 +300,35 @@ function App() {
               <p className="helper-note">Local registration is available only while the API runs in Development.</p>
             </section>
           ) : (
+            <>
+            {tenantLoaded && <section className="card tenant-overview" aria-labelledby="tenant-overview-title">
+              <div className="card-heading"><div><h2 id="tenant-overview-title">Tenant overview</h2><p>Current workspace activity and membership at a glance.</p></div><span className="count-badge">Tenant-wide</span></div>
+              {reportLoading ? <p className="empty-state" role="status">Loading tenant overview…</p> : reportError ? <div className="notice error" role="alert">{reportError}</div> : dashboard && <>
+                <div className="overview-metrics">
+                  <article className="metric-card"><span>Active members</span><strong>{dashboard.activeMembers}</strong></article>
+                  <article className="metric-card"><span>Suspended members</span><strong>{dashboard.suspendedMembers}</strong></article>
+                  <article className="metric-card"><span>Stored files</span><strong>{dashboard.storedFiles}</strong></article>
+                  <article className="metric-card"><span>Audit events (30d)</span><strong>{dashboard.auditEventsLast30Days}</strong></article>
+                </div>
+                <div className="activity-section">
+                  <div className="activity-heading"><h3>Recent activity</h3><span>Latest 8 events</span></div>
+                  {recentAudit.length === 0 ? <p className="empty-state">No recent activity for this tenant.</p> : (
+                    <ol className="activity-list">
+                      {recentAudit.map(item => (
+                        <li key={item.id}>
+                          <span className="activity-marker" aria-hidden="true" />
+                          <div className="activity-details">
+                            <strong>{item.action}</strong>
+                            <span>{item.resourceType}{item.resourceId ? ` · ${item.resourceId}` : ''}</span>
+                          </div>
+                          <time dateTime={item.occurredAtUtc}>{new Date(item.occurredAtUtc).toLocaleString()}</time>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              </>}
+            </section>}
             <div className="dashboard-grid">
               <section className="card profile-card" aria-labelledby="profile-title">
                 <div className="card-heading"><div><h2 id="profile-title">Signed-in account</h2><p>Authenticated by the platform session cookie.</p></div><span className="avatar" aria-hidden="true">{user.displayName.slice(0, 1).toUpperCase()}</span></div>
@@ -299,6 +373,7 @@ function App() {
                 </>}
               </section>
             </div>
+            </>
           )}
           <footer className="page-footer">Common Web Platform <span>•</span> Local development evaluation</footer>
         </section>
