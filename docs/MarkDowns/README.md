@@ -17,6 +17,7 @@ Common Web Platform is a reusable application foundation that can be used as a f
 | [Roadmap.md](./Roadmap.md) | Incremental release plan and exit conditions |
 | [Backlog.md](./Backlog.md) | Prioritized tasks, statuses, dependencies and acceptance criteria |
 | [DecisionLog.md](./DecisionLog.md) | Recorded choices and open questions |
+| [SaaSReadinessDiscovery.md](./SaaSReadinessDiscovery.md) | Client-demand findings and pre-production hosting, lifecycle, billing and operations gates |
 | [Tracker.md](./Tracker.md) | Current status and work log |
 
 ## Working Agreements
@@ -28,7 +29,6 @@ Common Web Platform is a reusable application foundation that can be used as a f
 - Record material architecture changes in `DecisionLog.md` and update affected docs together.
 - The documents describe a recommendation, not a commitment to implement every module at once.
 
-Project Status: Backend foundation in progress
-
+Project Status: PLAT-016 SaaS-readiness discovery complete; deployment and billing decisions remain open
 
 

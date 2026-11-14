@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-14
 
-Project Status: PLAT-015 tenant role access approval workflow complete; awaiting user review
+Project Status: PLAT-016 SaaS-readiness discovery complete; awaiting user review; production SaaS remains gated on client validation
 
-Overall Completion: 94% (15 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 13 of 14)
+Overall Completion: 100% (16 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 13 of 14; remaining task is discovery, not product implementation)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -57,6 +57,8 @@ Status: Complete
 - [x] Complete PLAT-014 with permission-controlled subscriptions, signed/retried delivery, auditable attempts and operator/consumer documentation.
 - [x] After user review, begin PLAT-015 with a confirmed tenant role access request and approval use case.
 - [x] Complete PLAT-015 with explicit request states, manager authorization, tenant scope, auditable decisions and role assignment.
+- [x] After user review, begin PLAT-016 SaaS deployment, billing and operator-controls discovery.
+- [x] Complete PLAT-016 discovery documentation; record unvalidated client demand and keep public hosting/billing implementation gated.
 
 ## Progress Update Format
 
@@ -174,3 +176,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-015 Done.
 - Verification: all 14 unit tests and 27 SQL Server/API integration tests passed, including request creation, duplicate rejection, permission denial, self-approval prevention, approval/role assignment, rejection without assignment, audit metadata, tenant isolation, pagination validation, migration application, and OpenAPI paths. Release solution tests/build passed; `dotnet format --verify-no-changes` and `git diff --check` passed. Tests used isolated databases; the Demo Client database was not modified.
 - Next action: user review of PLAT-015. Do not start PLAT-016 until explicitly approved.
+
+### 2026-11-14 — PLAT-016 SaaS deployment, billing and operator-controls discovery
+
+- Outcome: documented known project constraints and gaps, prospective-client information still missing, hosting alternatives and cost checks, tenant provisioning/offboarding/support-access decisions, billing questions, and operational/security gates in [SaaSReadinessDiscovery.md](./SaaSReadinessDiscovery.md). Recorded ADR-012: remain local/demo-only and do not select a provider, add payment integration, or claim production readiness without validated client needs, a budget, and an operations owner.
+- Task IDs: PLAT-016 Done (discovery/documentation only; no SaaS deployment or billing implementation).
+- Verification: manually cross-checked findings against the PRD, architecture, security, local development and roadmap documents plus the current API surface; `git diff --check` passed. No code changed, so build/tests were not required.
+- Next action: user review of PLAT-016. The discovery is complete, but production SaaS remains gated on the open client, budget, lifecycle, hosting and operational decisions; do not implement hosting or billing without explicit approval.

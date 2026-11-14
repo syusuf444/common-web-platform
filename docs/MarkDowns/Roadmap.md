@@ -32,6 +32,8 @@ Deliver only after client validation: tenant provisioning, operator controls, bi
 
 Exit when: hosting and operational controls are selected, isolation/security review is complete, and a restore/incident exercise succeeds.
 
+PLAT-016 discovery is recorded in [SaaSReadinessDiscovery.md](./SaaSReadinessDiscovery.md). Current outcome: client demand and production budget/targets remain unvalidated, so the application stays local/demo-only. Discovery completion does not authorize SaaS deployment or billing implementation.
+
 ## Sequencing Rules
 
 - Do not begin a module until its dependencies are complete or explicitly stubbed through a stable contract.
@@ -39,5 +41,4 @@ Exit when: hosting and operational controls are selected, isolation/security rev
 - Keep API host/OpenAPI work independently runnable; database-backed work waits for a reachable SQL Server Database Engine.
 - Keep each release small enough for one developer to build, verify and document.
 - Revisit priorities after a real client use case; modules without demand remain planned rather than partially built.
-
 
