@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-14
 
-Project Status: PLAT-016 SaaS-readiness discovery complete; awaiting user review; production SaaS remains gated on client validation
+Project Status: PLAT-017 no-cost demo-hosting feasibility complete; awaiting user review; no cloud resources deployed
 
-Overall Completion: 100% (16 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 13 of 14; remaining task is discovery, not product implementation)
+Overall Completion: 100% (17 of 17 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 13 of 14; PLAT-016/017 are discovery tasks, not product implementation)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -59,6 +59,8 @@ Status: Complete
 - [x] Complete PLAT-015 with explicit request states, manager authorization, tenant scope, auditable decisions and role assignment.
 - [x] After user review, begin PLAT-016 SaaS deployment, billing and operator-controls discovery.
 - [x] Complete PLAT-016 discovery documentation; record unvalidated client demand and keep public hosting/billing implementation gated.
+- [x] After PLAT-016 review, assess a no-cost hosted demo candidate against the user's no-paid-services constraint.
+- [x] Complete PLAT-017 with verified free-tier constraints, cost safeguards, frontend/CORS blockers, and no deployment.
 
 ## Progress Update Format
 
@@ -183,3 +185,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-016 Done (discovery/documentation only; no SaaS deployment or billing implementation).
 - Verification: manually cross-checked findings against the PRD, architecture, security, local development and roadmap documents plus the current API surface; `git diff --check` passed. No code changed, so build/tests were not required.
 - Next action: user review of PLAT-016. The discovery is complete, but production SaaS remains gated on the open client, budget, lifecycle, hosting and operational decisions; do not implement hosting or billing without explicit approval.
+
+### 2026-11-14 — PLAT-017 no-cost demo-hosting feasibility
+
+- Outcome: compared the current .NET 10, SQL Server/EF Core and React evaluation setup with Microsoft's current Azure App Service Free and Azure SQL Database free-tier documentation. Azure is a possible disposable-demo candidate, not an approved host. Recorded the free compute quota/no-scale-out limitation, SQL monthly allowances, no SLA, pause-at-limit safeguard, supporting-resource cost risk, and the current frontend/CORS deployment gap in [SaaSReadinessDiscovery.md](./SaaSReadinessDiscovery.md).
+- Task IDs: PLAT-017 Done (research/documentation only; no cloud account or resource created, no application code changed, and no customer data permitted).
+- Verification: checked the official [App Service plan documentation](https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans) and [Azure SQL free-tier documentation](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-tier?view=azuresql); inspected the API's Development-only credentialed CORS and current React evaluation project location. `git diff --check` passed. Build/tests were not applicable because no code changed.
+- Next action: user review. Before any deployment, confirm access to an Azure subscription and explicitly approve an isolated demo only after verifying that paid overages are disabled and all supporting resources remain within the no-cost constraint. No production/customer data.

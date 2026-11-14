@@ -29,6 +29,5 @@ Common Web Platform is a reusable application foundation that can be used as a f
 - Record material architecture changes in `DecisionLog.md` and update affected docs together.
 - The documents describe a recommendation, not a commitment to implement every module at once.
 
-Project Status: PLAT-016 SaaS-readiness discovery complete; deployment and billing decisions remain open
-
+Project Status: PLAT-017 no-cost demo-hosting feasibility documented; no deployment approved
 

@@ -32,7 +32,7 @@ Deliver only after client validation: tenant provisioning, operator controls, bi
 
 Exit when: hosting and operational controls are selected, isolation/security review is complete, and a restore/incident exercise succeeds.
 
-PLAT-016 discovery is recorded in [SaaSReadinessDiscovery.md](./SaaSReadinessDiscovery.md). Current outcome: client demand and production budget/targets remain unvalidated, so the application stays local/demo-only. Discovery completion does not authorize SaaS deployment or billing implementation.
+PLAT-016 discovery and PLAT-017 free-tier feasibility findings are recorded in [SaaSReadinessDiscovery.md](./SaaSReadinessDiscovery.md). Client demand and production budget/targets remain unvalidated, so the application stays local/demo-only by default. Azure is only a possible disposable-demo candidate; no account or resource has been created. Discovery does not authorize cloud deployment, SaaS operations, or billing implementation.
 
 ## Sequencing Rules
 
@@ -41,4 +41,3 @@ PLAT-016 discovery is recorded in [SaaSReadinessDiscovery.md](./SaaSReadinessDis
 - Keep API host/OpenAPI work independently runnable; database-backed work waits for a reachable SQL Server Database Engine.
 - Keep each release small enough for one developer to build, verify and document.
 - Revisit priorities after a real client use case; modules without demand remain planned rather than partially built.
-

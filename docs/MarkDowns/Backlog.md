@@ -20,6 +20,7 @@ Status values: `Not Started`, `In Progress`, `Blocked`, `Done`. Priority: `P0` r
 | PLAT-014 | P2 | Add webhook/integration foundation | Done | PLAT-011 | Subscriptions are permission-controlled; delivery signed, retried safely and attempts auditable. |
 | PLAT-015 | P2 | Add workflow/approval module for a validated use case | Done | PLAT-007 | One real workflow has explicit states, authorization and audit; no generic workflow engine without evidence. |
 | PLAT-016 | P3 | SaaS deployment, billing and operator controls discovery | Done | PLAT-013 | Client demand, hosting, tenant lifecycle, billing and operational/security requirements documented before implementation. |
+| PLAT-017 | P3 | Assess no-cost hosting for an isolated demo | Done | PLAT-016 | Verify current provider limits against the .NET, SQL Server and React setup; document a candidate, cost/safety gates and remaining deployment blockers without creating resources or using customer data. |
 
 ## Backlog Rules
 

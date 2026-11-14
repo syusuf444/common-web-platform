@@ -41,17 +41,22 @@ Current conclusion: these facts are not in the project record. Treat demand as u
 
 ### Current recommendation
 
-Continue local development and demos only. Do not place real client data on an internet-accessible environment. The current LocalDB setup and local adapters do not provide production availability, backup, monitoring, or recovery guarantees.
+Continue local development and demos by default. Azure is the best researched candidate for a later isolated, disposable demo because Azure SQL Database uses the SQL Server engine and currently advertises a recurring free allowance. This is not a provider selection or deployment approval: do not create cloud resources until the user confirms an Azure subscription and approves the billing-safety configuration. Do not place real client data on an internet-accessible environment. The current LocalDB setup and local adapters do not provide production availability, backup, monitoring, or recovery guarantees.
 
 ### Options to assess after requirements are known
 
 | Option | Potential fit | Required validation |
 |---|---|---|
+| Azure App Service Free (F1) + Azure SQL Database free tier | Closest researched match for the current .NET 10 API and SQL Server/EF Core stack. Microsoft's current SQL Database free-tier page advertises 100,000 vCore-seconds, 32 GB data and 32 GB backup storage per database per month, with up to 10 free-tier databases per subscription. | App Service Free uses shared compute with CPU quotas and cannot scale out; the SQL free tier has no SLA. Configure the SQL database to pause at its free limit rather than allowing paid overages. Confirm subscription/region eligibility, runtime availability, and that no supporting resource or later scale-up can incur charges. Keep demo data synthetic and disposable. |
 | Customer-managed/on-premises host | Could avoid a platform hosting bill where the customer already has maintained infrastructure. | Customer owns patching, network/TLS, backups, monitoring, restore tests, and support responsibility; confirm SQL Server licensing/edition and connectivity. |
 | Self-host on existing developer/customer hardware | Suitable only for a controlled demo or non-critical pilot. | Reliable power/network, static/reachable ingress, TLS, firewalling, encrypted backups, key protection, patching, monitoring, and an identified on-call owner. A zero hosting invoice does not make this a supported SaaS service. |
 | Third-party cloud or free tier | Could support a later public pilot if its capabilities and costs fit. | Provider terms, current free-tier limits and expiry, SQL Server compatibility, data region, egress/storage/backup costs, uptime, secrets, and a migration/exit path. Do not assume the free tier will remain free or meet production requirements. |
 
-No provider has been selected. Before any internet-facing deployment, record the owner, monthly budget ceiling, data region, availability/recovery targets, and operational responsibilities. If the required service cannot be run safely within the confirmed no-paid-services constraint, pause deployment or obtain explicit budget approval instead of weakening security controls.
+Azure's official documentation describes the [App Service hosting plans](https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans) and the [Azure SQL Database free tier](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-tier?view=azuresql). Limits and eligibility can change; verify them again in the target subscription before creating anything. The database offer explicitly has no SLA and lets the owner choose whether to pause at the monthly free limit or allow paid overages. A free allowance for one resource does not make its supporting resources free.
+
+The current React project is under `frontend-evaluation/react`, and the API enables credentialed CORS only in Development. A separate static frontend/API deployment therefore needs a reviewed production origin and cookie/CORS configuration; it is not ready to deploy as-is. Co-hosting or a same-origin setup may simplify this, but requires implementation and verification before a public demo.
+
+No provider has been selected. Before any internet-facing deployment, record the owner, monthly budget ceiling, data region, availability/recovery targets, and operational responsibilities. If a truly zero-cost configuration cannot be guaranteed, pause deployment rather than risk a charge or weaken security controls.
 
 ## Tenant Lifecycle and Operator Controls
 
@@ -103,7 +108,7 @@ Existing authentication, audit, authorization, tenant-scoped reporting and integ
 
 ## Decision and Next Steps
 
-1. Keep the product local/demo-only; no hosting vendor, billing system, SaaS plan, or operator access model is approved.
+1. Keep the product local/demo-only by default; no production hosting vendor, billing system, SaaS plan, or operator access model is approved. Azure is only a possible disposable-demo candidate.
 2. The user must confirm a real prospective client and the required use case, operating budget (including whether any paid services are allowed), expected users/data, jurisdiction, and availability/support expectations.
 3. After client discovery, create a deployment decision with a costed hosting option and named operational owner.
 4. Define and approve the tenant lifecycle, data export/retention/deletion, and support-access policies before implementing operator controls.
@@ -111,3 +116,5 @@ Existing authentication, audit, authorization, tenant-scoped reporting and integ
 6. Before production onboarding, close the operational/security gates above and perform a restore and incident-response exercise.
 
 **PLAT-016 outcome:** discovery findings, known constraints, unknowns, and pre-implementation gates are documented. Decisions requiring real client input remain open by design; this document does not claim SaaS production readiness.
+
+**PLAT-017 outcome:** assessed official Azure free-tier documentation against the current stack and recorded the quotas, cost risks, lack of SLA, and frontend/CORS blockers. No account, subscription, cloud resource, or public deployment was created. A demo deployment still requires explicit user approval and a verified no-overage setup.
