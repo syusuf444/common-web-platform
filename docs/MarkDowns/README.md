@@ -18,6 +18,7 @@ Common Web Platform is a reusable application foundation that can be used as a f
 | [Backlog.md](./Backlog.md) | Prioritized tasks, statuses, dependencies and acceptance criteria |
 | [DecisionLog.md](./DecisionLog.md) | Recorded choices and open questions |
 | [SaaSReadinessDiscovery.md](./SaaSReadinessDiscovery.md) | Client-demand findings and pre-production hosting, lifecycle, billing and operations gates |
+| [../Postman/README.md](../Postman/README.md) | Importable Postman API collection and local authentication/testing guidance |
 | [Tracker.md](./Tracker.md) | Current status and work log |
 
 ## Working Agreements
@@ -29,4 +30,4 @@ Common Web Platform is a reusable application foundation that can be used as a f
 - Record material architecture changes in `DecisionLog.md` and update affected docs together.
 - The documents describe a recommendation, not a commitment to implement every module at once.
 
-Project Status: PLAT-018 local React demo includes tenant overview; no cloud deployment approved
+Project Status: PLAT-019 Postman testing collection complete; no cloud deployment approved

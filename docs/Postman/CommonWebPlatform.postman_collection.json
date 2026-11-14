@@ -1,0 +1,1236 @@
+{
+  "info": {
+    "name": "Common Web Platform API",
+    "description": "Local API testing collection. Uses the Postman cookie jar for CWP.Auth and CWP.AntiForgery. No credentials or cookie values are stored in this collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5247",
+      "type": "string"
+    },
+    {
+      "key": "tenantId",
+      "value": "125212F0-D035-44D0-B5F8-1ECAA5102C96",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "syusuf@test.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newUserEmail",
+      "value": "postman-user@example.local",
+      "type": "string"
+    },
+    {
+      "key": "newUserPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "existingUserEmail",
+      "value": "existing-user@example.local",
+      "type": "string"
+    },
+    {
+      "key": "csrfToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "membershipId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "roleId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "roleAccessRequestId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "fileId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "webhookSubscriptionId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "webhookEndpoint",
+      "value": "http://localhost:9000/webhooks",
+      "type": "string"
+    },
+    {
+      "key": "settingKey",
+      "value": "ui.theme",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Check API and database readiness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health/ready",
+            "description": "Checks whether the configured SQL Server database can be reached."
+          },
+          "response": []
+        },
+        {
+          "name": "Check API availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "Returns the API process health without requiring database connectivity."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sample",
+      "item": [
+        {
+          "name": "Read the versioned sample resource",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/sample",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Validate and accept a sample request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/sample",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman demo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Get a request token for cookie-authenticated state changes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/auth/csrf",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('csrfToken', pm.response.json().requestToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sign in and issue a short-lived HTTP-only session cookie",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "description": "Before submitting, call GET /api/v1/auth/csrf and retain its CWP.AntiForgery cookie. Send the returned requestToken in the X-CSRF-TOKEN header and include that same cookie with this request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh CSRF token after login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/auth/csrf",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('csrfToken', pm.response.json().requestToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read the current signed-in user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/auth/me",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create a local development account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/auth/register",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"displayName\": \"Postman User\",\n  \"password\": \"{{newUserPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('existingUserEmail', pm.collectionVariables.get('newUserEmail'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revoke the current and other sessions for this account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/auth/sessions/revoke-all",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke the current session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/auth/logout",
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tenant memberships and roles",
+      "item": [
+        {
+          "name": "Activate or suspend a membership in the active tenant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/memberships/{{membershipId}}/status",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Suspended\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add an existing account to the active tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/memberships",
+            "description": "Email invitations are not available yet. The user must first have an active platform account.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{existingUserEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const responseBody = pm.response.json();",
+                  "  const id = responseBody.membershipId;",
+                  "  if (id) pm.collectionVariables.set('membershipId', id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign a role to an active membership in the active tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/memberships/{{membershipId}}/roles/{{roleId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create a tenant-scoped role with supported permissions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/roles",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Auditor\",\n  \"permissionCodes\": [\n    \"tenant.audit.read\",\n    \"tenant.reports.read\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const responseBody = pm.response.json();",
+                  "  const id = responseBody.id;",
+                  "  if (id) pm.collectionVariables.set('roleId', id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List memberships in the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/memberships",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List roles and permissions in the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/roles",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Remove a tenant role from a membership in the active tenant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/memberships/{{membershipId}}/roles/{{roleId}}",
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tenant members",
+      "item": [
+        {
+          "name": "Get a member and role assignments in the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/members/{{membershipId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List members and role assignments in the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/members",
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get aggregate dashboard counts for the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/dashboard",
+            "description": "Returns active and suspended member counts, stored files, and audit events from the last 30 days."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Audit",
+      "item": [
+        {
+          "name": "List security and administration audit records for the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/audit?skip=0&take=50",
+            "description": "Results are ordered newest first. Audit records are append-only and scoped to the verified tenant."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Export a bounded page of tenant audit report rows as CSV",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/reports/audit/export.csv?skip=0&take=50",
+            "description": "Exports at most 1000 rows per request. Use skip and take to page through larger reports."
+          },
+          "response": []
+        },
+        {
+          "name": "Get a page of tenant audit report rows",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/reports/audit?skip=0&take=50",
+            "description": "Returns only operational event fields; sensitive audit metadata is excluded."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tenant settings",
+      "item": [
+        {
+          "name": "Create a non-secret setting for the active tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/settings",
+            "description": "Values are plain text. Keys suggesting passwords, tokens, credentials, or cryptographic/connection secrets are rejected.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"ui.theme\",\n  \"value\": \"dark\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a setting from the active tenant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/settings/{{settingKey}}",
+            "description": "Deletes the setting with this key from the verified tenant."
+          },
+          "response": []
+        },
+        {
+          "name": "Get a non-secret setting from the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/settings/{{settingKey}}",
+            "description": "Looks up a setting by its normalized key within the verified tenant."
+          },
+          "response": []
+        },
+        {
+          "name": "List non-secret settings for the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/settings",
+            "description": "Returns settings for the verified tenant only. Secret values are not supported."
+          },
+          "response": []
+        },
+        {
+          "name": "Update a non-secret setting in the active tenant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/settings/{{settingKey}}",
+            "description": "Replaces the setting value. Values are plain text and limited to 2000 characters.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": \"light\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List recent notifications from the active tenant's local outbox",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/notifications?take=50",
+            "description": "Returns at most 100 local notifications. No external email provider is contacted."
+          },
+          "response": []
+        },
+        {
+          "name": "Read a notification from the active tenant's local outbox",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/notifications/{{notificationId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Write a notification to the active tenant's local outbox",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/notifications",
+            "description": "This local adapter does not send email or contact a third-party service. Outbox write failures are logged and returned as an API error.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipient\": \"client@example.local\",\n  \"subject\": \"Postman demo notification\",\n  \"body\": \"Stored in the local outbox; no email is sent.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const responseBody = pm.response.json();",
+                  "  const id = responseBody.id;",
+                  "  if (id) pm.collectionVariables.set('notificationId', id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Files",
+      "item": [
+        {
+          "name": "Download a file belonging to the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/files/{{fileId}}/content",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List file metadata in the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/files",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Read tenant-scoped file metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/files/{{fileId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Upload a supported file to the active tenant's local storage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/files",
+            "description": "Accepts PDF, PNG, and JPEG files up to 10 MiB. File content is signature-checked; stored names are generated server-side.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Choose a PDF, PNG, or JPEG file (maximum 10 MiB)."
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const responseBody = pm.response.json();",
+                  "  const id = responseBody.id;",
+                  "  if (id) pm.collectionVariables.set('fileId', id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Disable a webhook subscription in the active tenant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/webhooks/subscriptions/{{webhookSubscriptionId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get webhook subscription metadata in the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/webhooks/subscriptions/{{webhookSubscriptionId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List webhook deliveries and their attempt history in the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/webhooks/deliveries?skip=0&take=50",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List webhook subscriptions in the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/webhooks/subscriptions",
+            "description": "Signing secrets are never included in subscription list responses."
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe an active tenant to an event type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/webhooks/subscriptions",
+            "description": "The generated signing secret is returned only once. The endpoint host must be configured in Webhooks:AllowedHosts.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"tenant.member.added\",\n  \"endpointUrl\": \"{{webhookEndpoint}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const responseBody = pm.response.json();",
+                  "  const id = responseBody.id;",
+                  "  if (id) pm.collectionVariables.set('webhookSubscriptionId', id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Role access requests",
+      "item": [
+        {
+          "name": "Approve a pending role access request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/role-access-requests/{{roleAccessRequestId}}/approve",
+            "description": "Requires workflows.manage. The requester cannot decide their own request; approval assigns the role in the same transaction."
+          },
+          "response": []
+        },
+        {
+          "name": "Get a role access request submitted by the active member",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/role-access-requests/{{roleAccessRequestId}}",
+            "description": "Requests belonging to another member or tenant are returned as not found."
+          },
+          "response": []
+        },
+        {
+          "name": "List pending role access requests for the active tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/role-access-requests/pending?skip=0&take=50",
+            "description": "Requires workflows.manage; results are paginated oldest-first for review."
+          },
+          "response": []
+        },
+        {
+          "name": "List role access requests submitted by the active member",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/role-access-requests/mine?skip=0&take=50",
+            "description": "Results are scoped to the authenticated member and active tenant."
+          },
+          "response": []
+        },
+        {
+          "name": "Reject a pending role access request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/role-access-requests/{{roleAccessRequestId}}/reject",
+            "description": "Requires workflows.manage. The requester cannot decide their own request; approval assigns the role in the same transaction."
+          },
+          "response": []
+        },
+        {
+          "name": "Request a role for the authenticated tenant membership",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenantId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/tenant/role-access-requests",
+            "description": "The requester can only request access for their own active membership. Only one pending request per role is allowed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleId\": \"{{roleId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const responseBody = pm.response.json();",
+                  "  const id = responseBody.id;",
+                  "  if (id) pm.collectionVariables.set('roleAccessRequestId', id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

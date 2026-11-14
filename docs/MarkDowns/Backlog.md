@@ -22,6 +22,7 @@ Status values: `Not Started`, `In Progress`, `Blocked`, `Done`. Priority: `P0` r
 | PLAT-016 | P3 | SaaS deployment, billing and operator controls discovery | Done | PLAT-013 | Client demand, hosting, tenant lifecycle, billing and operational/security requirements documented before implementation. |
 | PLAT-017 | P3 | Assess no-cost hosting for an isolated demo | Done | PLAT-016 | Verify current provider limits against the .NET, SQL Server and React setup; document a candidate, cost/safety gates and remaining deployment blockers without creating resources or using customer data. |
 | PLAT-018 | P2 | Add tenant overview dashboard to the React demo shell | Done | PLAT-013, PLAT-008 | After a user loads an authorized tenant, display tenant summary counts and recent audit events using the existing reporting APIs; show loading, empty and permission/error states without bypassing server authorization. |
+| PLAT-019 | P2 | Create an importable Postman collection for the API | Done | PLAT-003, PLAT-006, PLAT-013, PLAT-014, PLAT-015 | Collection covers every current OpenAPI operation with request examples and local variable handling; documents cookie/CSRF login without persisting credentials; collection routes and payload fields are validated against OpenAPI. |
 
 ## Backlog Rules
 

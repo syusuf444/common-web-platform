@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-14
 
-Project Status: PLAT-018 tenant dashboard added to the local React demo; awaiting user review; no cloud resources deployed
+Project Status: PLAT-019 complete; importable Postman collection covers the current API; awaiting user review
 
-Overall Completion: 100% (18 of 18 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 14 of 15; PLAT-016/017 are discovery tasks, not product implementation)
+Overall Completion: 100% (19 of 19 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 14 of 15; PLAT-016/017 are discovery tasks and PLAT-019 is test tooling/documentation)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -62,6 +62,7 @@ Status: Complete
 - [x] After PLAT-016 review, assess a no-cost hosted demo candidate against the user's no-paid-services constraint.
 - [x] Complete PLAT-017 with verified free-tier constraints, cost safeguards, frontend/CORS blockers, and no deployment.
 - [x] Keep the application local after the user confirmed no Azure subscription; add a tenant overview to the React demo using existing dashboard and audit-report APIs.
+- [x] After PLAT-018 review, add an importable Postman collection covering all current API operations, with sample bodies and safe cookie/CSRF guidance.
 
 ## Progress Update Format
 
@@ -200,3 +201,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-018 Done (local frontend only; no cloud resources or new backend behavior).
 - Verification: `npm run build` and `npm run lint` passed. Signed in through the local browser, loaded the existing Demo Client tenant, and verified the API-backed metric cards, recent audit activity, and member list rendered. `git diff --check` passed.
 - Next action: user review of PLAT-018. Continue local/demo-only; do not start a hosted deployment without an Azure subscription and explicit no-cost deployment approval.
+
+### 2026-11-14 — PLAT-019 Postman collection for API testing
+
+- Outcome: added an importable Postman v2.1 collection and setup guide in [docs/Postman/README.md](../Postman/README.md). It covers all current API operations, includes request bodies and multipart upload setup, sends tenant and CSRF headers from collection variables, relies on Postman's cookie jar, and captures IDs from successful create responses. Password and cookie values are not stored in the collection.
+- Task IDs: PLAT-019 Done (API test tooling/documentation; no application behavior changed).
+- Verification: validated the JSON structure; compared all 46 unique collection operations and JSON body fields against the running OpenAPI document; confirmed no missing routes, unresolved variables, missing tenant/CSRF headers, or embedded password/cookie values. The one additional collection request is the intentional post-login CSRF refresh helper. Exercised the cookie/CSRF login flow locally and received HTTP 200 from current-user, member-list, dashboard, and audit-report requests. `git diff --check` passed.
+- Next action: user review of PLAT-019. No hosting or cloud deployment is involved.
