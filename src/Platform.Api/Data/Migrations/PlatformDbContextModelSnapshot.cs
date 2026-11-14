@@ -279,6 +279,16 @@ namespace Platform.Api.Data.Migrations
                         {
                             Code = "files.upload",
                             Description = "Upload files to the tenant."
+                        },
+                        new
+                        {
+                            Code = "reports.read",
+                            Description = "Read tenant dashboard and report data."
+                        },
+                        new
+                        {
+                            Code = "reports.export",
+                            Description = "Export tenant report data."
                         });
                 });
 

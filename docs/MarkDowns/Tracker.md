@@ -1,10 +1,10 @@
 # Common Web Platform - Development Tracker
 
-Last Updated: 2026-11-10
+Last Updated: 2026-11-14
 
-Project Status: PLAT-012 file metadata and local storage complete; awaiting user review
+Project Status: PLAT-013 tenant dashboard and reporting complete; awaiting user review
 
-Overall Completion: 75% (12 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 10 of 14)
+Overall Completion: 81% (13 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 11 of 14)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -51,6 +51,8 @@ Status: Complete
 - [x] Complete PLAT-011 with a notification contract, local outbox delivery, observable failures and verification.
 - [x] After user review, begin PLAT-012 tenant file metadata and local storage.
 - [x] Complete PLAT-012 with tenant-scoped upload/download, size/type checks, safe local storage and verification.
+- [x] After user review, begin PLAT-013 tenant dashboard and reporting foundation.
+- [x] Complete PLAT-013 with tenant-scoped dashboard metrics, paginated reports, export authorization and verification.
 
 ## Progress Update Format
 
@@ -147,3 +149,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-012 Done.
 - Verification: all 14 unit tests and 22 SQL Server/API integration tests passed, including authorization, antiforgery, upload size/type/signature validation, metadata persistence, download, tenant isolation, path/name traversal protection, and OpenAPI multipart documentation. Release solution test/build passed; `dotnet format --verify-no-changes` and `git diff --check` passed. Tests applied migrations to isolated databases and used temporary storage; the Demo Client database was not modified.
 - Next action: user review of PLAT-012. Do not start PLAT-013 until explicitly approved.
+
+### 2026-11-14 — PLAT-013 tenant dashboard and reporting foundation
+
+- Outcome: added tenant dashboard counts for active/suspended members, stored files and audit events in the last 30 days; added a paginated, newest-first audit report query and CSV export. Reporting query access uses a dedicated interface. Dashboard and JSON reports require `reports.read`; CSV requires separate `reports.export`. The migration grants both permissions to existing roles with `roles.manage`. Reports are always tenant-scoped, omit audit metadata, and CSV fields are escaped and neutralized against spreadsheet formula injection. CSV export is bounded to 1000 rows per request.
+- Task IDs: PLAT-013 Done.
+- Verification: all 14 unit tests and 23 SQL Server/API integration tests passed; the integration test covers dashboard counts, tenant isolation, reader/export permission separation, report pagination, bounded export, metadata omission, CSV content and spreadsheet formula neutralization. OpenAPI includes all reporting routes. Release solution test/build passed; `dotnet format --verify-no-changes` and `git diff --check` passed. Tests applied migrations to isolated databases; the Demo Client database was not modified.
+- Next action: user review of PLAT-013. Do not start PLAT-014 until explicitly approved.

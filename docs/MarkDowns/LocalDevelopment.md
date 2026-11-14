@@ -42,6 +42,10 @@ Files are uploaded to `POST /api/v1/tenant/files` as multipart form data with a 
 
 Tenant audit records are available at `GET /api/v1/tenant/audit?skip=0&take=50` to members with the `audit.read` permission. Results are newest-first and restricted to the verified tenant; `take` is limited to 100. The audit feed records authentication outcomes, session revocation, member lifecycle and tenant role changes. Audit metadata is limited to non-secret operational details; failed login entries omit the submitted email and password.
 
+### Tenant dashboard and reports
+
+`GET /api/v1/tenant/dashboard` returns active/suspended member counts, stored file count, and audit event count for the last 30 days. `GET /api/v1/tenant/reports/audit?skip=0&take=50` returns a newest-first page of operational audit event fields without metadata. Both require `reports.read`, a signed-in user and a verified `X-Tenant-ID`. CSV export is available at `GET /api/v1/tenant/reports/audit/export.csv?skip=0&take=1000` and requires the separate `reports.export` permission. Exports are limited to 1000 rows per request; use `skip`/`take` to page. Existing roles with `roles.manage` receive both reporting permissions through the migration. Export fields are CSV-escaped and neutralized against spreadsheet formula injection.
+
 ### Local notifications
 
 Tenant notifications can be written to and inspected in a local JSON outbox. `POST /api/v1/tenant/notifications` requires `notifications.send`, a valid tenant context, an antiforgery token, and a recipient, subject and plain-text body. `GET /api/v1/tenant/notifications?take=50` and `GET /api/v1/tenant/notifications/{notificationId}` require `notifications.read`. The new permissions are initially granted to existing roles that already have `roles.manage`. The default outbox is `%LOCALAPPDATA%\CommonWebPlatform\notification-outbox`, partitioned by tenant UUID. Override it with `Notifications:LocalOutboxPath` in local configuration. The adapter does not send email or contact a third party; failures are logged and returned as API errors. Avoid including secrets or sensitive personal data in demo messages.

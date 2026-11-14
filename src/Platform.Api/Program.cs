@@ -11,6 +11,7 @@ using Platform.Api.Data;
 using Platform.Api.Files;
 using Platform.Api.Identity;
 using Platform.Api.Notifications;
+using Platform.Api.Reporting;
 using Platform.Api.Settings;
 using Platform.Modules.Identity.Application;
 using Platform.Modules.Identity.Domain;
@@ -131,6 +132,12 @@ public static class ApiApplication
             options.AddPolicy(TenantPermissionPolicies.FilesUpload, policy => policy
                 .RequireAuthenticatedUser()
                 .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.FilesUpload)));
+            options.AddPolicy(TenantPermissionPolicies.ReportsRead, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.ReportsRead)));
+            options.AddPolicy(TenantPermissionPolicies.ReportsExport, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.ReportsExport)));
         });
         builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
         builder.Services.AddAntiforgery(options =>
@@ -182,6 +189,7 @@ public static class ApiApplication
         builder.Services.AddScoped<ITenantFileRepository, EfTenantFileRepository>();
         builder.Services.AddScoped<ITenantFileService, TenantFileService>();
         builder.Services.AddScoped<IAuditRecordService, AuditRecordService>();
+        builder.Services.AddScoped<ITenantReportingQueries, EfTenantReportingQueries>();
         builder.Services.AddScoped<ITenantSettingService, TenantSettingService>();
         builder.Services.AddScoped<ITenantMembershipRepository, EfTenantMembershipRepository>();
         builder.Services.AddScoped<ITenantRoleRepository, EfTenantRoleRepository>();
@@ -332,6 +340,7 @@ public static class ApiApplication
         app.MapTenantAuthorizationEndpoints();
         app.MapTenantMemberManagementEndpoints();
         app.MapAuditEndpoints();
+        app.MapTenantReportingEndpoints();
         app.MapTenantSettingEndpoints();
         app.MapNotificationEndpoints();
         app.MapTenantFileEndpoints();

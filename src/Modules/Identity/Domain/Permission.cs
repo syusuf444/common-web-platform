@@ -19,6 +19,8 @@ public static class PermissionCodes
     public const string NotificationsSend = "notifications.send";
     public const string FilesRead = "files.read";
     public const string FilesUpload = "files.upload";
+    public const string ReportsRead = "reports.read";
+    public const string ReportsExport = "reports.export";
 
     public static IReadOnlyList<string> All { get; } =
         [
@@ -32,5 +34,7 @@ public static class PermissionCodes
             NotificationsSend,
             FilesRead,
             FilesUpload,
+            ReportsRead,
+            ReportsExport,
         ];
 }

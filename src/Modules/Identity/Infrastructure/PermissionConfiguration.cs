@@ -22,6 +22,8 @@ public sealed class PermissionConfiguration : IEntityTypeConfiguration<Permissio
             new Permission { Code = PermissionCodes.NotificationsRead, Description = "Read notifications in the tenant outbox." },
             new Permission { Code = PermissionCodes.NotificationsSend, Description = "Write notifications to the tenant outbox." },
             new Permission { Code = PermissionCodes.FilesRead, Description = "Read metadata and download files in the tenant." },
-            new Permission { Code = PermissionCodes.FilesUpload, Description = "Upload files to the tenant." });
+            new Permission { Code = PermissionCodes.FilesUpload, Description = "Upload files to the tenant." },
+            new Permission { Code = PermissionCodes.ReportsRead, Description = "Read tenant dashboard and report data." },
+            new Permission { Code = PermissionCodes.ReportsExport, Description = "Export tenant report data." });
     }
 }

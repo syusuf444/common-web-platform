@@ -21,6 +21,7 @@ The catalog is the long-term product scope. Implement in the roadmap order, and 
 | Settings & Feature Configuration | Tenant preferences, feature switches | Secrets remain in environment/secret store, never ordinary settings rows | Foundation |
 | Notifications | Tenant-scoped notification requests and outbox, provider adapters | Local mode writes plain-text notifications to an inspectable file outbox; no external provider is contacted | Core |
 | Files | Tenant-scoped file metadata and storage ports | Local adapter stores signature-checked PDF, PNG and JPEG files under a configured root | Core |
+| Reporting | Tenant dashboard counts and paged audit reports | SQL-backed tenant queries; CSV export has a separate permission and bounded pages | Core |
 | File Management | File metadata, ownership, access policy, storage interface | Binary storage adapter separate; validate type/size and authorize every download | Core |
 | Dashboard & Reporting | Read models, saved filters, exports | No direct writes to module-owned data; exports tenant-scoped | Core |
 | Workflow & Approvals | Configurable approval steps and decisions | Start with limited workflows; avoid building a general BPM engine | Later |
@@ -42,5 +43,6 @@ These are host capabilities, not a dumping ground for business logic: configurat
 - Notifications deliver messages; the originating module owns the business decision to notify.
 - Notifications exposes tenant-authorized send and outbox-read contracts. The current local adapter writes JSON records under the configured local outbox directory; it is a development/demo sink, not email delivery. Adapter errors are logged and surfaced to the API caller.
 - Files stores metadata in SQL Server and content in the local adapter using generated names. File metadata and content access are permission-controlled and tenant-scoped; the original upload name is not used to construct a path.
+- Reporting exposes tenant dashboard metrics and paged audit event reports through query interfaces. CSV export is separately authorized, excludes audit metadata and neutralizes spreadsheet formulas.
 - Files owns metadata/access and storage adapters; domain modules retain their own business references.
 - Reporting reads authorized module data through supported query interfaces; it does not bypass module rules.

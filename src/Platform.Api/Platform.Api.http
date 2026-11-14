@@ -36,6 +36,26 @@ Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
 
 ###
 
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/dashboard
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/reports/audit?skip=0&take=50
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/reports/audit/export.csv?skip=0&take=1000
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
 GET {{Platform.Api_HostAddress}}/api/v1/tenant/notifications?take=50
 Accept: application/json
 X-Tenant-ID: {{tenantId}}
