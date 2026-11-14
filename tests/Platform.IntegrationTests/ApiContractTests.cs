@@ -97,6 +97,12 @@ public sealed class ApiContractTests(ApiFixture fixture) : IClassFixture<ApiFixt
         Assert.Contains(paths, path => path == "/api/v1/tenant/webhooks/subscriptions");
         Assert.Contains(paths, path => path == "/api/v1/tenant/webhooks/subscriptions/{subscriptionId}");
         Assert.Contains(paths, path => path == "/api/v1/tenant/webhooks/deliveries");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/role-access-requests");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/role-access-requests/mine");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/role-access-requests/pending");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/role-access-requests/{requestId}");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/role-access-requests/{requestId}/approve");
+        Assert.Contains(paths, path => path == "/api/v1/tenant/role-access-requests/{requestId}/reject");
         var upload = document.RootElement
             .GetProperty("paths")
             .GetProperty("/api/v1/tenant/files")

@@ -10,6 +10,7 @@ Accept: application/json
 @tenantId = 00000000-0000-0000-0000-000000000000
 @membershipId = 00000000-0000-0000-0000-000000000000
 @roleId = 00000000-0000-0000-0000-000000000000
+@roleAccessRequestId = 00000000-0000-0000-0000-000000000000
 @fileId = 00000000-0000-0000-0000-000000000000
 @webhookSubscriptionId = 00000000-0000-0000-0000-000000000000
 @webhookEndpoint = https://your-allowlisted-host.example/webhooks
@@ -247,6 +248,54 @@ Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
 ###
 
 DELETE {{Platform.Api_HostAddress}}/api/v1/tenant/webhooks/subscriptions/{{webhookSubscriptionId}}
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+POST {{Platform.Api_HostAddress}}/api/v1/tenant/role-access-requests
+Accept: application/json
+Content-Type: application/json
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+{
+  "roleId": "{{roleId}}"
+}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/role-access-requests/mine?skip=0&take=50
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/role-access-requests/{{roleAccessRequestId}}
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+GET {{Platform.Api_HostAddress}}/api/v1/tenant/role-access-requests/pending?skip=0&take=50
+Accept: application/json
+X-Tenant-ID: {{tenantId}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+POST {{Platform.Api_HostAddress}}/api/v1/tenant/role-access-requests/{{roleAccessRequestId}}/approve
+X-Tenant-ID: {{tenantId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}
+
+###
+
+POST {{Platform.Api_HostAddress}}/api/v1/tenant/role-access-requests/{{roleAccessRequestId}}/reject
 X-Tenant-ID: {{tenantId}}
 X-CSRF-TOKEN: {{csrfToken}}
 Cookie: CWP.Auth={{authCookie}}; CWP.AntiForgery={{antiForgeryCookie}}

@@ -2,9 +2,9 @@
 
 Last Updated: 2026-11-14
 
-Project Status: PLAT-014 webhook/integration foundation complete; awaiting user review
+Project Status: PLAT-015 tenant role access approval workflow complete; awaiting user review
 
-Overall Completion: 88% (14 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 12 of 14)
+Overall Completion: 94% (15 of 16 backlog tasks done; Blueprint: 100% | Backend stack: 100% | Implementation: 13 of 14)
 
 Database environment: SQL Server LocalDB `MSSQLLocalDB` and `sqlcmd` are installed. The instance was started and verified with a query returning the SQL Server name and product version. SSMS is installed at `C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe`; use it to manage the local database. SSMS is a client, while LocalDB is the running Database Engine.
 
@@ -55,6 +55,8 @@ Status: Complete
 - [x] Complete PLAT-013 with tenant-scoped dashboard metrics, paginated reports, export authorization and verification.
 - [x] After user review, begin PLAT-014 webhook/integration foundation.
 - [x] Complete PLAT-014 with permission-controlled subscriptions, signed/retried delivery, auditable attempts and operator/consumer documentation.
+- [x] After user review, begin PLAT-015 with a confirmed tenant role access request and approval use case.
+- [x] Complete PLAT-015 with explicit request states, manager authorization, tenant scope, auditable decisions and role assignment.
 
 ## Progress Update Format
 
@@ -165,3 +167,10 @@ For each work session, append a dated heading with outcome, completed task IDs, 
 - Task IDs: PLAT-014 Done.
 - Verification: all 14 unit tests and 26 SQL Server/API integration tests passed, including authorization, tenant isolation, one-time secret protection, signature verification, retry/attempt persistence, invalid-event rejection, OpenAPI coverage, and expired-lease recovery. Release solution tests/build passed; `dotnet format --verify-no-changes` and `git diff --check` passed. Tests used isolated databases; the Demo Client database was not modified.
 - Next action: user review of PLAT-014. Do not start PLAT-015 until explicitly approved.
+
+### 2026-11-14 — PLAT-015 tenant role access approval workflow
+
+- Outcome: implemented the confirmed member role-access request workflow. An active member can create and view their own requests; authorized tenant reviewers can list pending requests and approve/reject them. States transition from Pending to Approved or Rejected once, self-decisions are denied, duplicate pending requests are constrained, and approval assigns the role in the same transaction. The new `workflows.manage` permission is granted to existing roles that already have `roles.manage`. Request creation and decisions include tenant-scoped audit records. Added paginated API routes, OpenAPI coverage, request examples, and setup documentation; no generic workflow engine was introduced.
+- Task IDs: PLAT-015 Done.
+- Verification: all 14 unit tests and 27 SQL Server/API integration tests passed, including request creation, duplicate rejection, permission denial, self-approval prevention, approval/role assignment, rejection without assignment, audit metadata, tenant isolation, pagination validation, migration application, and OpenAPI paths. Release solution tests/build passed; `dotnet format --verify-no-changes` and `git diff --check` passed. Tests used isolated databases; the Demo Client database was not modified.
+- Next action: user review of PLAT-015. Do not start PLAT-016 until explicitly approved.

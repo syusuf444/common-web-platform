@@ -16,4 +16,5 @@ public static class TenantPermissionPolicies
     public const string ReportsExport = "tenant.reports.export";
     public const string WebhooksRead = "tenant.webhooks.read";
     public const string WebhooksManage = "tenant.webhooks.manage";
+    public const string WorkflowsManage = "tenant.workflows.manage";
 }

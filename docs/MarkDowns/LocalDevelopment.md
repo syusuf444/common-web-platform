@@ -62,6 +62,12 @@ Each delivery is an HTTP POST with JSON content and `X-CWP-Webhook-Id`, `X-CWP-W
 
 Events are published internally through `IWebhookPublisher`; there is no public endpoint for tenants to inject arbitrary events. A producer module must explicitly publish an event for matching active subscriptions to receive deliveries. The default allowlist is empty, so outbound delivery remains unavailable until an operator configures a host.
 
+### Role access approval workflow
+
+An authenticated, active tenant member can submit `POST /api/v1/tenant/role-access-requests` with `{"roleId":"<tenant-role-uuid>"}` and review their own requests at `GET /api/v1/tenant/role-access-requests/mine?skip=0&take=50` or `GET /api/v1/tenant/role-access-requests/{requestId}`. Request lists are newest-first for the member and oldest-first for reviewers, with `skip`/`take` bounds matching other tenant reports. A duplicate pending request or a role the member already has returns `409`; roles from other tenants are not found. Members cannot approve or reject their own requests.
+
+Members with `workflows.manage` can review `GET /api/v1/tenant/role-access-requests/pending` and decide with `POST /api/v1/tenant/role-access-requests/{requestId}/approve` or `/reject`. Approval assigns the requested role to the requester's still-active membership in the same transaction as the state change; rejection does not assign it. Requests transition once from `Pending` to `Approved` or `Rejected`. Both creation and decisions are recorded in the tenant audit log. The migration grants `workflows.manage` to existing roles that already have `roles.manage`; grant it to any other role that should review requests. All state-changing calls require the authenticated cookies and a fresh antiforgery token.
+
 Expose only local development ports by default. Compose is infrastructure convenience, not a requirement to containerize the application. Notification requests are captured in the local outbox and do not send email. File storage uses a local adapter. No paid cloud service is needed for the initial workflow.
 
 ## Local Deployment Shape

@@ -4,6 +4,7 @@ using Platform.Modules.Identity.Domain;
 using Platform.Modules.Files.Domain;
 using Platform.Modules.Tenancy.Domain;
 using Platform.Modules.Webhooks.Domain;
+using Platform.Modules.Workflows.Domain;
 
 namespace Platform.Api.Data;
 
@@ -33,6 +34,8 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
 
     public DbSet<WebhookDeliveryAttempt> WebhookDeliveryAttempts => Set<WebhookDeliveryAttempt>();
 
+    public DbSet<RoleAccessRequest> RoleAccessRequests => Set<RoleAccessRequest>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -44,6 +47,7 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
         modelBuilder.ApplyConfiguration(new WebhookSubscriptionConfiguration());
         modelBuilder.ApplyConfiguration(new WebhookDeliveryConfiguration());
         modelBuilder.ApplyConfiguration(new WebhookDeliveryAttemptConfiguration());
+        modelBuilder.ApplyConfiguration(new RoleAccessRequestConfiguration());
         modelBuilder.Entity<TenantMembership>()
             .HasOne<PlatformUser>()
             .WithMany()

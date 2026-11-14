@@ -299,6 +299,11 @@ namespace Platform.Api.Data.Migrations
                         {
                             Code = "webhooks.manage",
                             Description = "Create and disable tenant webhook subscriptions."
+                        },
+                        new
+                        {
+                            Code = "workflows.manage",
+                            Description = "Review and decide tenant role access requests."
                         });
                 });
 
@@ -625,6 +630,52 @@ namespace Platform.Api.Data.Migrations
                     b.ToTable("WebhookSubscriptions", "platform");
                 });
 
+            modelBuilder.Entity("Platform.Modules.Workflows.Domain.RoleAccessRequest", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("DecidedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("DecidedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("RequestedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("RequesterMembershipId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RequesterUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("TenantId", "Id");
+
+                    b.HasIndex("TenantId", "RoleId");
+
+                    b.HasIndex("TenantId", "RequesterMembershipId", "RoleId")
+                        .IsUnique()
+                        .HasFilter("[Status] = N'Pending'");
+
+                    b.HasIndex("TenantId", "RequesterUserId", "RequestedAtUtc");
+
+                    b.HasIndex("TenantId", "Status", "RequestedAtUtc");
+
+                    b.ToTable("RoleAccessRequests", "platform");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
                     b.HasOne("Platform.Modules.Identity.Domain.PlatformUser", null)
@@ -751,6 +802,16 @@ namespace Platform.Api.Data.Migrations
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Platform.Modules.Workflows.Domain.RoleAccessRequest", b =>
+                {
+                    b.HasOne("Platform.Modules.Identity.Domain.TenantRole", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

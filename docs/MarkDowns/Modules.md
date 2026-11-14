@@ -24,7 +24,7 @@ The catalog is the long-term product scope. Implement in the roadmap order, and 
 | Reporting | Tenant dashboard counts and paged audit reports | SQL-backed tenant queries; CSV export has a separate permission and bounded pages | Core |
 | File Management | File metadata, ownership, access policy, storage interface | Binary storage adapter separate; validate type/size and authorize every download | Core |
 | Dashboard & Reporting | Read models, saved filters, exports | No direct writes to module-owned data; exports tenant-scoped | Core |
-| Workflow & Approvals | Configurable approval steps and decisions | Start with limited workflows; avoid building a general BPM engine | Later |
+| Workflow & Approvals | Tenant role access requests and approval decisions | Implement the validated role-access workflow first; avoid building a general BPM engine | Core |
 | Search | Search contracts and module-owned indexing adapters | Add only when simple database queries are insufficient | Later |
 | Integration/Webhooks | API credentials, webhook subscriptions, delivery attempts | Signed payloads, retries, replay controls and audit | Later |
 | Localization | Locale preferences, translation resources, timezone display | Store timestamps in UTC; format at presentation edge | Later |

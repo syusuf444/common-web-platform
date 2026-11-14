@@ -26,6 +26,7 @@ public sealed class PermissionConfiguration : IEntityTypeConfiguration<Permissio
             new Permission { Code = PermissionCodes.ReportsRead, Description = "Read tenant dashboard and report data." },
             new Permission { Code = PermissionCodes.ReportsExport, Description = "Export tenant report data." },
             new Permission { Code = PermissionCodes.WebhooksRead, Description = "Read tenant webhook subscriptions and delivery attempts." },
-            new Permission { Code = PermissionCodes.WebhooksManage, Description = "Create and disable tenant webhook subscriptions." });
+            new Permission { Code = PermissionCodes.WebhooksManage, Description = "Create and disable tenant webhook subscriptions." },
+            new Permission { Code = PermissionCodes.WorkflowsManage, Description = "Review and decide tenant role access requests." });
     }
 }

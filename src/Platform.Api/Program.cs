@@ -15,11 +15,13 @@ using Platform.Api.Notifications;
 using Platform.Api.Reporting;
 using Platform.Api.Settings;
 using Platform.Api.Webhooks;
+using Platform.Api.Workflows;
 using Platform.Modules.Identity.Application;
 using Platform.Modules.Identity.Domain;
 using Platform.Modules.Notifications.Application;
 using Platform.Modules.Files.Application;
 using Platform.Modules.Webhooks.Application;
+using Platform.Modules.Workflows.Application;
 using Platform.Modules.Tenancy.Application;
 
 var app = ApiApplication.Build(args);
@@ -148,6 +150,9 @@ public static class ApiApplication
             options.AddPolicy(TenantPermissionPolicies.WebhooksManage, policy => policy
                 .RequireAuthenticatedUser()
                 .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.WebhooksManage)));
+            options.AddPolicy(TenantPermissionPolicies.WorkflowsManage, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TenantPermissionRequirement(Platform.Modules.Identity.Domain.PermissionCodes.WorkflowsManage)));
         });
         builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
         builder.Services.AddAntiforgery(options =>
@@ -213,6 +218,8 @@ public static class ApiApplication
         {
             builder.Services.AddHostedService<WebhookDeliveryWorker>();
         }
+        builder.Services.AddScoped<IRoleAccessRequestStore, EfRoleAccessRequestStore>();
+        builder.Services.AddScoped<IRoleAccessRequestService, RoleAccessRequestService>();
         builder.Services.AddScoped<IAuditRecordService, AuditRecordService>();
         builder.Services.AddScoped<ITenantReportingQueries, EfTenantReportingQueries>();
         builder.Services.AddScoped<ITenantSettingService, TenantSettingService>();
@@ -367,6 +374,7 @@ public static class ApiApplication
         app.MapAuditEndpoints();
         app.MapTenantReportingEndpoints();
         app.MapWebhookEndpoints();
+        app.MapRoleAccessRequestEndpoints();
         app.MapTenantSettingEndpoints();
         app.MapNotificationEndpoints();
         app.MapTenantFileEndpoints();
